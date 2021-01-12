@@ -1,0 +1,22 @@
+service: cognito-logins-report
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+
+custom:
+  create-client-state-machine-name: ${self:service}-${self:provider.stage}  
+
+  stage: dev
+  region: us-west-2
+
+functions:
+  findUsers:
+    handler: src/findUsers.handler
+
+stepFunctions:
+  stateMachines:
+    GatherWeeklyLoginData:
+      name: ${self:custom.create-client-state-machine-name}
