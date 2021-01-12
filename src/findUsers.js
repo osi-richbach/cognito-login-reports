@@ -6,11 +6,11 @@ exports.handler = event => {
   // eslint-disable-next-line
   console.log(`${JSON.stringify(event)}`);
 
-  let pageToken = event.page_token
+  let pageToken = event.find_users.next_page_token
   if (pageToken === '') {
     pageToken = undefined
   }
-
+  console.log(`Page token=${pageToken}`)
   return findUsers(pageToken).then(response => {
     return { find_users: response }
   }).catch(error => {
