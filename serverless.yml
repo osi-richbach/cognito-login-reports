@@ -5,6 +5,7 @@ plugins:
   - serverless-step-functions
   - serverless-pseudo-parameters
   - serverless-offline
+  - serverless-iam-roles-per-function
 
 provider:
   name: aws
@@ -12,12 +13,17 @@ provider:
   lambdaHashingVersion: 20201221
   stage: dev
   region: us-west-2
+  apiGateway:
+    shouldStartNameWithService: true
 
 custom:
   state-machine-name: ${self:service}-${self:provider.stage}
-  state-machine-arn: arn:aws:states:${self:provider.region}:142152461930:stateMachine:${self:custom.state-machine-name} 
-  login-report-table-name: ${self:service}-${self:region}-login-report
-  non-confirmed-users-table-name: ${self:service}-${self:region}-non-confirmed-users
+  state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.state-machine-name} 
+  login-report-table-name: ${self:service}-${self:provider.region}-login-report
+  non-confirmed-users-table-name: ${self:service}-${self:provider.region}-non-confirmed-users
+  find-users-dlq-sns-topic: ${self:service}-${self:provider.stage}-findUsersDlq
+  find-users-dlq-sns-topic-arn: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.find-users-dlq-sns-topic}
+  
   dev:
     userPoolId: us-west-2_FCgAM8Jlo
   prod:
@@ -44,6 +50,11 @@ functions:
       USER_POOL_ID: ${self:custom.${self:provider.stage}.userPoolId} 
       REGION: ${self:provider.region}
 
+  findUsersDlq:
+    handler: src/findUsersDlq.handler
+    events:
+      - sns: ${self:custom.find-users-dlq-sns-topic}
+
   processConfirmedUsers:
     handler: src/processConfirmedUsers.handler
     environment:
@@ -51,7 +62,7 @@ functions:
       REGION: ${self:provider.region}
       LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}
       NON_CONFIRMED_USERS_TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
-      FIND_USERS_DLQ_TOPIC_ARN: TODO  
+      FIND_USERS_DLQ_TOPIC_ARN: ${self:custom.find-users-dlq-sns-topic-arn}   
 
   processNonConfirmedUsers:
     handler: src/processNonConfirmedUsers.handler
@@ -59,7 +70,7 @@ functions:
       USER_POOL_ID: ${self:custom.${self:provider.stage}.userPoolId} 
       REGION: ${self:provider.region}
       TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
-      FIND_USERS_DLQ_TOPIC_ARN: TODO        
+      FIND_USERS_DLQ_TOPIC_ARN: ${self:custom.find-users-dlq-sns-topic-arn}        
 
 stepFunctions:
   stateMachines:

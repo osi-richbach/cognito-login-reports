@@ -16,6 +16,7 @@
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
+    "serverless-iam-roles-per-function": "^3.0.1",
     "serverless-offline": "^6.8.0",
     "serverless-pseudo-parameters": "^2.5.0",
     "serverless-step-functions": "^2.29.0"
