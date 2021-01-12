@@ -16,7 +16,11 @@ provider:
 custom:
   state-machine-name: ${self:service}-${self:provider.stage}
   state-machine-arn: arn:aws:states:${self:provider.region}:142152461930:stateMachine:${self:custom.state-machine-name} 
-
+  dev:
+    userPoolId: us-west-2_FCgAM8Jlo
+  prod:
+    userPoolId: us-west-2_FCgAM8Jlo 
+    
 functions:
   apiInitiateStateMachine:
     handler: src/api/initiateLoginReport.handler
@@ -34,6 +38,9 @@ functions:
 
   findUsers:
     handler: src/findUsers.handler
+    environment:
+      USER_POOL_ID: ${self:custom.${self:provider.stage}.userPoolId} 
+      REGION: ${self:provider.region}
 
 stepFunctions:
   stateMachines:
