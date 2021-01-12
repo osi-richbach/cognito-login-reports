@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "license": "MIT",
   "dependencies": {
-    "aws-sdk": "^2.825.0"
+    "aws-sdk": "^2.825.0",
+    "sleep-promise": "^9.1.0"
   },
   "scripts": {
     "lint": "eslint . --fix",

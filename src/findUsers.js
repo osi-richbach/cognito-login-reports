@@ -1,5 +1,6 @@
 'use strict'
 const AWS = require('aws-sdk')
+const sleep = require('sleep-promise')
 
 exports.handler = event => {
   // eslint-disable-next-line
@@ -10,16 +11,13 @@ exports.handler = event => {
     pageToken = undefined
   }
 
-  // const jobId = __webpack_require__(57)();
-
-  return true
-  // return findUsers(jobId, pageToken).then(response => {
-  //   return { find_users: response };
-  // }).catch(error => {
-  //   // eslint-disable-next-line
-  //   console.error('Error finding users', error);
-  //   throw error;
-  // });
+  return findUsers(pageToken).then(response => {
+    return { find_users: response }
+  }).catch(error => {
+    // eslint-disable-next-line
+    console.error('Error finding users', error);
+    throw error
+  })
 }
 
 const findUsers = (paginationToken) => {
@@ -60,9 +58,8 @@ const findUsers = (paginationToken) => {
     if (error.code === 'TooManyRequestsException') {
       // eslint-disable-next-line
       console.error(`TooManyRequestsException for page token ${paginationToken} with error ${JSON.stringify(error)}`);
-
-      return (0, _sleep.sleep)(Math.random() * 1000).then(() => {
-        return findUsers(jobId, paginationToken)
+      return sleep(Math.random() * 1000).then(() => {
+        return findUsers(paginationToken)
       })
     } else {
       // eslint-disable-next-line
