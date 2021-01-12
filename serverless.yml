@@ -16,6 +16,8 @@ provider:
 custom:
   state-machine-name: ${self:service}-${self:provider.stage}
   state-machine-arn: arn:aws:states:${self:provider.region}:142152461930:stateMachine:${self:custom.state-machine-name} 
+  login-report-table-name: ${self:service}-${self:region}-login-report
+  non-confirmed-users-table-name: ${self:service}-${self:region}-non-confirmed-users
   dev:
     userPoolId: us-west-2_FCgAM8Jlo
   prod:
@@ -42,6 +44,23 @@ functions:
       USER_POOL_ID: ${self:custom.${self:provider.stage}.userPoolId} 
       REGION: ${self:provider.region}
 
+  processConfirmedUsers:
+    handler: src/processConfirmedUsers.handler
+    environment:
+      USER_POOL_ID: ${self:custom.${self:provider.stage}.userPoolId} 
+      REGION: ${self:provider.region}
+      LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}
+      NON_CONFIRMED_USERS_TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
+      FIND_USERS_DLQ_TOPIC_ARN: TODO  
+
+  processNonConfirmedUsers:
+    handler: src/processNonConfirmedUsers.handler
+    environment:
+      USER_POOL_ID: ${self:custom.${self:provider.stage}.userPoolId} 
+      REGION: ${self:provider.region}
+      TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
+      FIND_USERS_DLQ_TOPIC_ARN: TODO        
+
 stepFunctions:
   stateMachines:
     GatherWeeklyLoginData:
@@ -55,7 +74,76 @@ stepFunctions:
               page_token.$: "$.find_users.next_page_token"
             Resource: 
               Fn::GetAtt: [findUsers, Arn]
-            Next: DataGatheringComplete
+            Next: ProcessUsers
+          ProcessUsers:
+            Type: Parallel
+            Next: CleanupState
+            Branches:
+            - StartAt: ProcessConfirmedUsers
+              States:
+                ProcessConfirmedUsers:
+                  Type: Task
+                  Parameters:
+                    users.$: "$.find_users.confirmed_users"
+                  ResultPath: "$.confirmed_users_result"
+                  Resource: 
+                    Fn::GetAtt: [processConfirmedUsers, Arn]
+                  End: true
+            - StartAt: ProcessNonConfirmedUsers
+              States:
+                ProcessNonConfirmedUsers:
+                  Type: Task
+                  Parameters:
+                    users.$: "$.find_users.non_confirmed_users"
+                  ResultPath: "$.non_confirmed_users_result"
+                  Resource: 
+                    Fn::GetAtt: [processNonConfirmedUsers, Arn]
+                  End: true
+          CleanupState:
+            Type: Pass
+            OutputPath: "$[0]"
+            Next: ProcessAnotherPage
+          ProcessAnotherPage:
+            Type: Choice
+            Choices:
+            - Not:
+                Variable: "$.find_users.next_page_token"
+                StringEquals: NONE
+              Next: FindUsers
+            Default: DataGatheringComplete            
           DataGatheringComplete:
             Type: Pass
             End: true
+
+resources:
+  Resources:
+    nonConfirmedUsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.non-confirmed-users-table-name}
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5            
+    loginReportTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.login-report-table-name}
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+          - AttributeName: jobId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+          - AttributeName: jobId
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5            
