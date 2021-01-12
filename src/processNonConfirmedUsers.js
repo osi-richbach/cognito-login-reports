@@ -2,7 +2,7 @@
 
 const AWS = require('aws-sdk')
 const sleep = require('sleep-promise')
-const logError = require('../utils/log-error')
+const logError = require('./util/logError')
 
 AWS.config.update({ region: process.env.REGION })
 
@@ -57,7 +57,7 @@ const writeToDynamo = putRequests => {
       const errorMessage = {
         putRequests
       }
-      logError('process_non_confirmed_user', 'multiple', JSON.parse(errorMessage), error)
+      logError.logError('process_non_confirmed_user', 'multiple', JSON.parse(errorMessage), error)
       throw error
     }
   })

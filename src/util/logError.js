@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk')
 
-export function logError (lambda, jobId, message, error) {
+exports.logError = (lambda, jobId, message, error) => {
   const publishMessage = {
     lambda: lambda,
     message: message,

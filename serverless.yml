@@ -17,18 +17,19 @@ provider:
     shouldStartNameWithService: true
 
 custom:
+  dev:
+    userPoolId: us-west-2_FCgAM8Jlo
+  prod:
+    userPoolId: us-west-2_FCgAM8Jlo 
+
+  user-pool-arn: arn:aws:cognito-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}
   state-machine-name: ${self:service}-${self:provider.stage}
   state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.state-machine-name} 
   login-report-table-name: ${self:service}-${self:provider.stage}-login-report
   non-confirmed-users-table-name: ${self:service}-${self:provider.stage}-non-confirmed-users
   find-users-dlq-sns-topic: ${self:service}-${self:provider.stage}-findUsersDlq
-  find-users-dlq-sns-topic-arn: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.find-users-dlq-sns-topic}
-  
-  dev:
-    userPoolId: us-west-2_FCgAM8Jlo
-  prod:
-    userPoolId: us-west-2_FCgAM8Jlo 
-    
+  find-users-dlq-sns-topic-arn: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.find-users-dlq-sns-topic} 
+
 functions:
   apiInitiateStateMachine:
     handler: src/api/initiateLoginReport.handler
@@ -49,6 +50,11 @@ functions:
     environment:
       USER_POOL_ID: ${self:custom.${self:provider.stage}.userPoolId} 
       REGION: ${self:provider.region}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - cognito-idp:ListUsers
+        Resource: ${self:custom.user-pool-arn}
 
   findUsersDlq:
     handler: src/findUsersDlq.handler
@@ -62,7 +68,19 @@ functions:
       REGION: ${self:provider.region}
       LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}
       NON_CONFIRMED_USERS_TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
-      FIND_USERS_DLQ_TOPIC_ARN: ${self:custom.find-users-dlq-sns-topic-arn}   
+      FIND_USERS_DLQ_TOPIC_ARN: ${self:custom.find-users-dlq-sns-topic-arn}  
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - dynamodb:BatchWriteItem
+        Resource:
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+      - Effect: Allow
+        Action:
+        - cognito-idp:AdminListUserAuthEvents
+        Resource:
+          Fn::Sub: arn:aws:cognito-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}      
 
   processNonConfirmedUsers:
     handler: src/processNonConfirmedUsers.handler
@@ -71,6 +89,12 @@ functions:
       REGION: ${self:provider.region}
       TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
       FIND_USERS_DLQ_TOPIC_ARN: ${self:custom.find-users-dlq-sns-topic-arn}        
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - dynamodb:BatchWriteItem
+        Resource:
+          Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
 
 stepFunctions:
   stateMachines:

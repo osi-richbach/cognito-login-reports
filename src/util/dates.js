@@ -1,4 +1,4 @@
-export function dayOfWeek (date) {
+exports.dayOfWeek = (date) => {
   const day = date.getDay()
   let cookedDay
   switch (day) {
@@ -29,7 +29,7 @@ export function dayOfWeek (date) {
   return cookedDay
 }
 
-export function cookDay (day) {
+exports.cookDay = (day) => {
   let cookedDay
   switch (day) {
     case 0:
@@ -59,7 +59,7 @@ export function cookDay (day) {
   return cookedDay
 }
 
-export function mondayLastWeek () {
+exports.mondayLastWeek = () => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const day = today.getDay()
@@ -67,7 +67,7 @@ export function mondayLastWeek () {
   return new Date(today.setDate(diff - 7))
 }
 
-export function mondayThisWeek () {
+exports.mondayThisWeek = () => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const day = today.getDay()
@@ -75,7 +75,7 @@ export function mondayThisWeek () {
   return new Date(today.setDate(diff))
 }
 
-export function formatEpoch (epoch) {
+exports.formatEpoch = (epoch) => {
   const thedate = new Date()
   thedate.setTime(epoch)
 

@@ -1,8 +1,8 @@
 'use strict'
 const AWS = require('aws-sdk')
 const sleep = require('sleep-promise')
-const dates = require('../utils/dates')
-const logError = require('../utils/log-error')
+const dates = require('./util/dates')
+const logError = require('./util/logError')
 
 // Create the DynamoDB service object
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10', region: process.env.REGION })
@@ -18,7 +18,7 @@ exports.handler = event => {
   }).catch(error => {
     // eslint-disable-next-line
     console.error(`Error writing confirmed users`, error);
-    logError('process_non_confirmed_user', 'multiple', JSON.parse(event), error)
+    logError.logError('process_non_confirmed_user', 'multiple', JSON.parse(event), error)
     throw error
   })
 }
@@ -135,7 +135,7 @@ const findLogins = (user, allSuccessfulLoginsList, allFailedLoginsList, nextToke
     } else {
       // eslint-disable-next-line
       console.error(`Error while retrieving authentication events for ${email}`, error);
-      logError('process_confirmed_user', 'multiple', email, error)
+      logError.logError('process_confirmed_user', 'multiple', email, error)
       throw error
     }
   })
@@ -212,7 +212,7 @@ const writeToDynamo = (table, requestItems) => {
       const errorMessage = {
         requestItems
       }
-      logError('process_confirmed_user', 'multiple', JSON.parse(errorMessage), error)
+      logError.logError('process_confirmed_user', 'multiple', JSON.parse(errorMessage), error)
       throw error
     }
   })
