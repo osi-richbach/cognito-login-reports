@@ -19,8 +19,8 @@ provider:
 custom:
   state-machine-name: ${self:service}-${self:provider.stage}
   state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.state-machine-name} 
-  login-report-table-name: ${self:service}-${self:provider.region}-login-report
-  non-confirmed-users-table-name: ${self:service}-${self:provider.region}-non-confirmed-users
+  login-report-table-name: ${self:service}-${self:provider.stage}-login-report
+  non-confirmed-users-table-name: ${self:service}-${self:provider.stage}-non-confirmed-users
   find-users-dlq-sns-topic: ${self:service}-${self:provider.stage}-findUsersDlq
   find-users-dlq-sns-topic-arn: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.find-users-dlq-sns-topic}
   
