@@ -1,22 +1,54 @@
 service: cognito-logins-report
 frameworkVersion: '2'
 
+plugins:
+  - serverless-step-functions
+  - serverless-pseudo-parameters
+  - serverless-offline
+
 provider:
   name: aws
   runtime: nodejs12.x
   lambdaHashingVersion: 20201221
-
-custom:
-  create-client-state-machine-name: ${self:service}-${self:provider.stage}  
-
   stage: dev
   region: us-west-2
 
+custom:
+  state-machine-name: ${self:service}-${self:provider.stage}
+  state-machine-arn: arn:aws:states:${self:provider.region}:142152461930:stateMachine:${self:custom.state-machine-name} 
+
 functions:
+  apiInitiateStateMachine:
+    handler: src/api/initiateLoginReport.handler
+    environment:
+      STATE_MACHINE_ARN: ${self:custom.state-machine-arn}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - states:StartExecution
+        Resource: ${self:custom.state-machine-arn}
+    events:
+      - http: 
+          method: POST
+          path: initiate
+
   findUsers:
     handler: src/findUsers.handler
 
 stepFunctions:
   stateMachines:
     GatherWeeklyLoginData:
-      name: ${self:custom.create-client-state-machine-name}
+      name: ${self:custom.state-machine-name}
+      definition:
+        StartAt: FindUsers
+        States:
+          FindUsers:
+            Type: Task
+            Parameters:
+              page_token.$: "$.find_users.next_page_token"
+            Resource: 
+              Fn::GetAtt: [findUsers, Arn]
+            Next: DataGatheringComplete
+          DataGatheringComplete:
+            Type: Pass
+            End: true

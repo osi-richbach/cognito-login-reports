@@ -11,7 +11,7 @@ exports.handler = event => {
 
   // const jobId = __webpack_require__(57)();
 
-  return true;
+  return true
   // return findUsers(jobId, pageToken).then(response => {
   //   return { find_users: response };
   // }).catch(error => {
