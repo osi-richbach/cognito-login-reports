@@ -59,6 +59,14 @@ exports.cookDay = (day) => {
   return cookedDay
 }
 
+exports.monday5WeeksAgo = () => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const day = today.getDay()
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(today.setDate(diff - 35))
+}
+
 exports.mondayLastWeek = () => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)

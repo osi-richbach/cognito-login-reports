@@ -170,10 +170,10 @@ const findLastLoginDate = (username, loginList) => {
 
 const findAuthEventsWithinDateRange = authEvents => {
   const loginAttemptsLastWeek = []
-  const lastMonday = (0, dates.mondayLastWeek)()
-  const thisMonday = (0, dates.mondayThisWeek)()
+  const lastMonday = dates.monday5WeeksAgo()
+  const thisMonday = dates.mondayThisWeek()
   /* eslint-disable */
-  console.log(`Last Monday is ${lastMonday}`);
+  console.log(`5 Mondays ago is ${lastMonday}`);
   console.log(`This Monday is ${thisMonday}`);
   /* eslint-enable */
 
