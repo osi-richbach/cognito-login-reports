@@ -50,6 +50,7 @@ functions:
     environment:
       USER_POOL_ID: ${self:custom.${self:provider.stage}.userPoolId} 
       REGION: ${self:provider.region}
+      LIST_NON_CONFIRMED_USERS: 'true'      
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -95,6 +96,26 @@ functions:
         - dynamodb:BatchWriteItem
         Resource:
           Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+
+  failedLoginsReport:
+    handler: src/failedLoginsReport.handler
+    environment:
+      REGION: ${self:provider.region}
+      TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
+      LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}  
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - dynamodb:Scan
+        Resource:
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.login-report-table-name}
+      - Effect: Allow
+        Action:
+        - s3:putObject
+        - s3:upload
+        Resource:
+        - arn:aws:s3:::cwds.cognito.userlist/*-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}      
 
 stepFunctions:
   stateMachines:
@@ -148,7 +169,28 @@ stepFunctions:
             Default: DataGatheringComplete            
           DataGatheringComplete:
             Type: Pass
-            End: true
+            Next: FailedLoginsReport
+          FailedLoginsReport:
+            Type: Task
+            Resource: arn:aws:lambda:us-west-2:${AWS::AccountId}:function:cognito-ab-deployment-FailedLoginsReport FIXME
+            Parameters:
+              job_id: placeholder
+            Next: SuccessfulLoginsReport
+          SuccessfulLoginsReport:
+            Type: Task
+            Resource: arn:aws:lambda:us-west-2:${AWS::AccountId}:function:cognito-ab-deployment-LastWeekLoginsReport FIXME
+            Parameters:
+              job_id: placeholder
+            Next: NoRecentLoginReport
+          NoRecentLoginReport:
+            Type: Task
+            Resource: arn:aws:lambda:us-west-2:${AWS::AccountId}:function:cognito-ab-deployment-NoRecentLoginReport FIXME
+            Parameters:
+              job_id: placeholder
+            Next: ReportsComplete
+          ReportsComplete:
+            Type: Pass
+            End: true            
 
 resources:
   Resources:

@@ -36,6 +36,7 @@ const findUsers = (paginationToken) => {
   const nonConfirmedUsers = []
   return cognitoidentityserviceprovider.listUsers(listUsersParams).promise().then(response => {
     response.Users.forEach(user => {
+      // console.log(`${user.Username} = ${user.UserStatus}`)
       if (user.UserStatus === 'CONFIRMED') {
         // eslint-disable-next-line
         console.log(`Found confirmed user ${user.Username}`);
