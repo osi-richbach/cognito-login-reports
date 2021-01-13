@@ -4,13 +4,14 @@ const dates = require('../util/dates')
 const Excel = require('exceljs')
 const fs = require('fs')
 const path = require('path')
+const dateFormat = require('dateformat')
 
 AWS.config.update({ region: process.env.REGION })
 
 // Create the DynamoDB service object
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' })
 const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
-const FILENAME = '/Users/rich/Downloads/no_recent_logins.xlsx'
+const FILENAME = `/Users/rich/Downloads/NoRecentLogins_${dateFormat(new Date(), 'mmmm_dd_yyyy')}.xlsx`
 
 const headerFont = {
   name: 'Calibri',
