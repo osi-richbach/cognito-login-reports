@@ -91,6 +91,21 @@ exports.mondayThisWeek = () => {
   return new Date(today.setDate(diff))
 }
 
+exports.arbitraryMonday = (previous) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const day = today.getDay()
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(today.setDate(diff - (7 * (previous - 1))))
+}
+
+exports.weekRange = (numWeeks) => {
+  return {
+    end: this.arbitraryMonday(numWeeks),
+    start: this.arbitraryMonday(numWeeks + 1)
+  }
+}
+
 exports.formatEpoch = (epoch) => {
   const thedate = new Date()
   thedate.setTime(epoch)

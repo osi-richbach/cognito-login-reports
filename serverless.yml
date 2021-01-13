@@ -197,6 +197,25 @@ functions:
         Resource:
         - arn:aws:s3:::cwds.cognito.userlist/*        
 
+  successfulLogins:
+    handler: src/construct/successfulLogins.handler
+    environment:
+      REGION: ${self:provider.region}
+      LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name} 
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - dynamodb:Scan
+        Resource:
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
+      - Effect: Allow
+        Action:
+        - s3:putObject
+        - s3:upload
+        Resource:
+        - arn:aws:s3:::cwds.cognito.userlist/*   
+
 stepFunctions:
   stateMachines:
     GatherWeeklyLoginData:
