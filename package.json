@@ -4,6 +4,7 @@
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.825.0",
+    "exceljs": "^4.2.0",
     "sleep-promise": "^9.1.0"
   },
   "scripts": {
