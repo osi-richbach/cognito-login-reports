@@ -176,6 +176,26 @@ functions:
         - s3:upload
         Resource:
         - arn:aws:s3:::cwds.cognito.userlist/*
+  
+  noRecentLogins:
+    handler: src/construct/noRecentLogins.handler
+    environment:
+      REGION: ${self:provider.region}
+      NON_CONFIRMED_USERS_TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
+      CONFIRMED_USERS_TABLE_NAME: ${self:custom.login-report-table-name} 
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - dynamodb:Scan
+        Resource:
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
+      - Effect: Allow
+        Action:
+        - s3:putObject
+        - s3:upload
+        Resource:
+        - arn:aws:s3:::cwds.cognito.userlist/*        
 
 stepFunctions:
   stateMachines:
