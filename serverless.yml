@@ -117,6 +117,46 @@ functions:
         Resource:
         - arn:aws:s3:::cwds.cognito.userlist/*-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}      
 
+  noRecentLoginsReport:
+    handler: src/noRecentLoginsReport.handler
+    environment:
+      REGION: ${self:provider.region}
+      ALLOWED_DAYS_WITHOUT_LOGIN: 30
+      NON_CONFIRMED_USERS_TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
+      CONFIRMED_USERS_TABLE_NAME: ${self:custom.login-report-table-name}  
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - dynamodb:Scan
+        Resource:
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.login-report-table-name}
+      - Effect: Allow
+        Action:
+        - s3:putObject
+        - s3:upload
+        Resource:
+        - arn:aws:s3:::cwds.cognito.userlist/*-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}      
+
+  successfulLoginsReport:
+    handler: src/successfulLoginsReport.handler
+    environment:
+      REGION: ${self:provider.region}
+      LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}  
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - dynamodb:Scan
+        Resource:
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.login-report-table-name}
+      - Effect: Allow
+        Action:
+        - s3:putObject
+        - s3:upload
+        Resource:
+        - arn:aws:s3:::cwds.cognito.userlist/*-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}      
+
 stepFunctions:
   stateMachines:
     GatherWeeklyLoginData:

@@ -142,7 +142,8 @@ const findLogins = (user, allSuccessfulLoginsList, allFailedLoginsList, nextToke
 }
 
 const isSuccessfulUserLogin = authEvent => {
-  if (authEvent.EventType === 'SignIn' && authEvent.EventResponse === 'Pass' && authEvent.EventContextData.City !== 'Boardman') {
+  // This really is horrible. 'Unknown, Unknown' seems to be best way to figure out the "fake" login
+  if (authEvent.EventType === 'SignIn' && authEvent.EventResponse === 'Pass' && authEvent.EventContextData.DeviceName !== 'Unknown, Unknown') {
     return true
   }
 

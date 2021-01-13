@@ -1,22 +1,16 @@
 'use strict'
+const AWS = require('aws-sdk')
+const dates = require('./util/dates')
+const fs = require('fs')
+const path = require('path')
 
-const _awsSdk = __webpack_require__(59)
+AWS.config.update({ region: process.env.REGION })
 
-const _awsSdk2 = _interopRequireDefault(_awsSdk)
-
-const _dates = __webpack_require__(732)
-
-function _interopRequireDefault (obj) { return obj && obj.__esModule ? obj : { default: obj } }
-
-const fs = __webpack_require__(21)
-const path = __webpack_require__(58)
-
-_awsSdk2.default.config.update({ region: process.env.REGION })
-const s3 = new _awsSdk2.default.S3({ apiVersion: '2006-03-01' })
+const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
 const FILENAME = '/tmp/successful_logins.csv'
 
 // Create the DynamoDB service object
-const ddb = new _awsSdk2.default.DynamoDB({ apiVersion: '2012-08-10' })
+const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' })
 
 exports.handler = event => {
   // eslint-disable-next-line
@@ -65,7 +59,7 @@ const readUserLogins = jobId => {
         incrementLoginsForHourOnThisDay(hourOfDayPerDayCounter, date.getDay(), date.getHours())
         incrementLoginsForHourOfDay(hourOfDayCounter, date.getHours())
         // console.log(`${username},${formatEpoch(epoch)},${dayOfWeek(date)},${login.city}`)
-        wstream.write(`${username},${(0, _dates.formatEpoch)(epoch)},${(0, _dates.dayOfWeek)(date)},${login.city}\n`)
+        wstream.write(`${username},${(0, dates.formatEpoch)(epoch)},${(0, dates.dayOfWeek)(date)},${login.city}\n`)
       })
 
       return Promise.resolve(true)
@@ -78,7 +72,7 @@ const readUserLogins = jobId => {
     const days = Object.keys(dayOfWeekCounter).sort();
     days.push(days.shift());
     days.forEach(day => {
-      wstream.write(`${(0, _dates.cookDay)(parseInt(day))},${dayOfWeekCounter[day]}\n`);
+      wstream.write(`${(0, dates.cookDay)(parseInt(day))},${dayOfWeekCounter[day]}\n`);
     });
     /* eslint-enable */
 
@@ -107,7 +101,7 @@ const readUserLogins = jobId => {
         return parseInt(a) - parseInt(b);
       });
       hoursOfDay.forEach(hour => {
-        wstream.write(`${(0, _dates.cookDay)(parseInt(day))},${hour},${hourOfDayPerDayCounter[day][hour]}\n`);
+        wstream.write(`${(0, dates.cookDay)(parseInt(day))},${hour},${hourOfDayPerDayCounter[day][hour]}\n`);
       });
     });
     /* eslint-enable */

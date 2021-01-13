@@ -1,21 +1,14 @@
 'use strict'
+const AWS = require('aws-sdk')
+const dates = require('./util/dates')
+const fs = require('fs')
+const path = require('path')
 
-const _awsSdk = __webpack_require__(59)
-
-const _awsSdk2 = _interopRequireDefault(_awsSdk)
-
-const _dates = __webpack_require__(732)
-
-function _interopRequireDefault (obj) { return obj && obj.__esModule ? obj : { default: obj } }
-
-const fs = __webpack_require__(21)
-const path = __webpack_require__(58)
-
-_awsSdk2.default.config.update({ region: process.env.REGION })
+AWS.config.update({ region: process.env.REGION })
 
 // Create the DynamoDB service object
-const ddb = new _awsSdk2.default.DynamoDB({ apiVersion: '2012-08-10' })
-const s3 = new _awsSdk2.default.S3({ apiVersion: '2006-03-01' })
+const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' })
+const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
 const FILENAME = '/tmp/no_recent_logins.csv'
 
 exports.handler = event => {
@@ -99,7 +92,7 @@ const readConfirmedUsers = (jobId, wstream) => {
         epoch = Date.parse(created)
       }
       if (dateOutsideOfRange(epoch)) {
-        wstream.write(`${username},${(0, _dates.formatEpoch)(epoch)}\n`)
+        wstream.write(`${username},${(0, dates.formatEpoch)(epoch)}\n`)
       }
     })
     return Promise.resolve(true)
