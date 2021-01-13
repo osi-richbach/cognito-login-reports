@@ -12,17 +12,69 @@ const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' })
 const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
 const FILENAME = '/Users/rich/Downloads/no_recent_logins.xlsx'
 
+const headerFont = {
+  name: 'Calibri',
+  bold: true,
+  size: 14
+}
+
+const headerFill = {
+  type: 'pattern',
+  pattern: 'lightGray'
+}
+
+const workbook = new Excel.Workbook()
+const sheet = workbook.addWorksheet('No Recent Logins', {})
+const style = {
+  font: {
+    name: 'Calibri',
+    bold: false,
+    size: 11
+  },
+  border: {
+    top: { style: 'thin' },
+    left: { style: 'thin' },
+    bottom: { style: 'thin' },
+    right: { style: 'thin' }
+  },
+  alignment: {
+    vertical: 'middle',
+    horizontal: 'center'
+  },
+  fill: {
+    type: 'pattern',
+    pattern: 'none'
+  }
+}
+
+const loginsArray = []
+
 exports.handler = event => {
   // eslint-disable-next-line
   console.log(`${JSON.stringify(event)}`);
 
-  const workbook = new Excel.Workbook()
-  const sheet = workbook.addWorksheet('No Recent Logins', { properties: { tabColor: { argb: 'FFC0000' } } })
-  const row = sheet.getRow(1)
-  row.values = ['EMAIL', 'LAST LOGIN DATE']
+  sheet.columns = [
+    { header: 'EMAIL', key: 'email', width: 32, style },
+    { header: 'LAST LOGIN DATE', key: 'date', width: 32, style }
+  ]
   return readUnconfirmedUsers(sheet).then(() => {
     return readConfirmedUsers(event.job_id, sheet)
   }).then(() => {
+    loginsArray.sort((a, b) => {
+      return a.epoch - b.epoch
+    })
+
+    loginsArray.forEach(element => {
+      let formattedEpoch = 'NO ACTIVITY'
+      if (element.epoch > -1) {
+        formattedEpoch = dates.formatEpoch(element.epoch)
+      }
+      sheet.addRow([element.username, formattedEpoch])
+    })
+    sheet.getCell('A1').fill = headerFill
+    sheet.getCell('A1').font = headerFont
+    sheet.getCell('B1').fill = headerFill
+    sheet.getCell('B1').font = headerFont
     return workbook.xlsx.writeFile(FILENAME)
   }).then(() => {
     const fileStream = fs.createReadStream(FILENAME)
@@ -57,7 +109,13 @@ const readUnconfirmedUsers = sheet => {
       const created = element.created.S
       const epoch = Date.parse(created)
       if (dateOutsideOfRange(epoch)) {
-        sheet.addRow([username, 'NO ACTIVITY'])
+        const activity = {
+          username,
+          epoch: -1
+        }
+
+        loginsArray.push(activity)
+        // sheet.addRow([username, 'NO ACTIVITY'])
       }
     })
     return Promise.resolve(true)
@@ -92,7 +150,13 @@ const readConfirmedUsers = (jobId, sheet) => {
         epoch = Date.parse(created)
       }
       if (dateOutsideOfRange(epoch)) {
-        sheet.addRow([username, dates.formatEpoch(epoch)])
+        const activity = {
+          username,
+          epoch
+        }
+
+        loginsArray.push(activity)
+        // sheet.addRow([username, dates.formatEpoch(epoch)])
       }
     })
     return Promise.resolve(true)
