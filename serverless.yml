@@ -115,7 +115,7 @@ functions:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist
+        - arn:aws:s3:::cwds.cognito.userlist/*
 
   noRecentLoginsReport:
     handler: src/noRecentLoginsReport.handler
@@ -136,7 +136,7 @@ functions:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist     
+        - arn:aws:s3:::cwds.cognito.userlist/*    
 
   successfulLoginsReport:
     handler: src/successfulLoginsReport.handler
@@ -155,7 +155,7 @@ functions:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist 
+        - arn:aws:s3:::cwds.cognito.userlist/*
 
 stepFunctions:
   stateMachines:
