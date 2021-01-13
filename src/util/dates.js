@@ -106,41 +106,29 @@ exports.weekRange = (numWeeks) => {
   }
 }
 
+// exports.formatEpoch = (epoch) => {
+//   const thedate = new Date()
+//   thedate.setTime(epoch)
+
+//   let month = thedate.getMonth() + 1
+//   if (month < 10) month = `0${month}`
+
+//   let date = thedate.getDate()
+//   if (date < 10) date = `0${date}`
+
+//   let hours = thedate.getHours()
+//   if (hours < 10) hours = `0${hours}`
+
+//   let minutes = thedate.getMinutes()
+//   if (minutes < 10) minutes = `0${minutes}`
+
+//   return `${thedate.getFullYear()}-${month}-${date} ${hours}:${minutes}`
+// }
+
 exports.formatEpoch = (epoch) => {
   const thedate = new Date()
   thedate.setTime(epoch)
 
-  let month = thedate.getMonth() + 1
-  if (month < 10) month = `0${month}`
-
-  let date = thedate.getDate()
-  if (date < 10) date = `0${date}`
-
-  let hours = thedate.getHours()
-  if (hours < 10) hours = `0${hours}`
-
-  let minutes = thedate.getMinutes()
-  if (minutes < 10) minutes = `0${minutes}`
-
-  return `${thedate.getFullYear()}-${month}-${date} ${hours}:${minutes}`
+  const dateFormat = require('dateformat')
+  return dateFormat(thedate, 'mm/dd/yyyy hh:MM:ss Z')
 }
-
-exports.formatEpoch = (epoch) => {
-  const thedate = new Date()
-  thedate.setTime(epoch)
-
-  let month = thedate.getMonth() + 1
-  if (month < 10) month = `0${month}`
-
-  let date = thedate.getDate()
-  if (date < 10) date = `0${date}`
-
-  let hours = thedate.getHours()
-  if (hours < 10) hours = `0${hours}`
-
-  let minutes = thedate.getMinutes()
-  if (minutes < 10) minutes = `0${minutes}`
-
-  return `${thedate.getFullYear()}-${month}-${date} ${hours}:${minutes}`
-}
-

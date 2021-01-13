@@ -1,14 +1,58 @@
 'use strict'
 const AWS = require('aws-sdk')
+const Excel = require('exceljs')
 const dates = require('../util/dates')
 const fs = require('fs')
 const path = require('path')
 const dateFormat = require('dateformat')
-const FILENAME = `/Users/rich/Downloads/SuccessfulLoginRepoprt_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
+const FILENAME = `/Users/rich/Downloads/SuccessfulLoginReport_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
 
 AWS.config.update({ region: process.env.REGION })
 
 const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
+
+const border = {
+  top: { style: 'thin' },
+  left: { style: 'thin' },
+  bottom: { style: 'thin' },
+  right: { style: 'thin' }
+}
+
+const headerFont = {
+  name: 'Calibri',
+  bold: true,
+  size: 14
+}
+
+const headerFill = {
+  type: 'pattern',
+  pattern: 'lightGray'
+}
+
+const workbook = new Excel.Workbook()
+const sheet = workbook.addWorksheet('Successful_Logins', {})
+const style = {
+  font: {
+    name: 'Calibri',
+    bold: false,
+    size: 11
+  },
+  alignment: {
+    vertical: 'middle',
+    horizontal: 'center'
+  },
+  fill: {
+    type: 'pattern',
+    pattern: 'none'
+  }
+}
+
+sheet.columns = [
+  { header: 'EMAIL', key: 'email', width: 32, style },
+  { header: 'DATE', key: 'date', width: 32, style },
+  { header: 'DAY', key: 'day', width: 12, style },
+  { header: 'CITY', key: 'city', width: 20, style }
+]
 
 // Create the DynamoDB service object
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' })
@@ -29,9 +73,8 @@ exports.inRange = (range, date) => {
   return date >= range.start && date < range.end
 }
 
-exports.sort = (obj) => {
+exports.sortOnValues = (obj) => {
   const array = Object.keys(obj).map((key) => [key, obj[key]])
-  // console.log( array)
   array.sort((a, b) => {
     return b[1] - a[1]
   })
@@ -47,7 +90,6 @@ exports.maxDayHour = (obj) => {
   }
 
   Object.keys(obj).map(day => {
-    console.log(`Working with day=${day}`)
     Object.keys(obj[day]).map(hour => {
       const count = obj[day][hour]
       if (count > maxDayHour.count) {
@@ -69,6 +111,10 @@ exports.parseWeek = (loginsArray) => {
   const hourOfDayCounter = {}
   const cityCounter = {}
 
+  loginsArray.sort((a, b) => {
+    return Date.parse(b.date) - Date.parse(a.date)
+  })
+
   loginsArray.forEach(login => {
     const epoch = Date.parse(login.date)
     const date = new Date()
@@ -80,10 +126,10 @@ exports.parseWeek = (loginsArray) => {
   })
 
   return {
-    dayOfWeekCounter: this.sort(dayOfWeekCounter),
+    dayOfWeekCounter: this.sortOnValues(dayOfWeekCounter),
     maxDayHour: this.maxDayHour(hourOfDayPerDayCounter),
-    hourOfDayCounter: this.sort(hourOfDayCounter),
-    cityCounter: this.sort(cityCounter)
+    hourOfDayCounter: this.sortOnValues(hourOfDayCounter),
+    cityCounter: this.sortOnValues(cityCounter)
   }
 }
 
@@ -121,21 +167,21 @@ const readUserLogins = jobId => {
         const epoch = Date.parse(login.date)
         const date = new Date()
         date.setTime(epoch)
-        let thearray = null
+        let loginsArray = null
         if (this.inRange(fiveWeeksAgo, date)) {
-          thearray = fiveWeeksAgoLogins
+          loginsArray = fiveWeeksAgoLogins
         } else if (this.inRange(fourWeeksAgo, date)) {
-          thearray = fourWeeksAgoLogins
+          loginsArray = fourWeeksAgoLogins
         } else if (this.inRange(threeWeeksAgo, date)) {
-          thearray = threeWeeksAgoLogins
+          loginsArray = threeWeeksAgoLogins
         } else if (this.inRange(twoWeeksAgo, date)) {
-          thearray = twoWeeksAgoLogins
+          loginsArray = twoWeeksAgoLogins
         } else if (this.inRange(oneWeeksAgo, date)) {
-          thearray = oneWeeksAgoLogins
+          loginsArray = oneWeeksAgoLogins
         }
         // wstream.write(`${username},${(0, dates.formatEpoch)(epoch)},${(0, dates.dayOfWeek)(date)},${login.city}\n`)
-        if (thearray !== null) {
-          thearray.push({
+        if (loginsArray !== null) {
+          loginsArray.push({
             username,
             date,
             city: login.city
@@ -143,10 +189,6 @@ const readUserLogins = jobId => {
         }
       })
     })
-
-    return Promise.resolve(true)
-  }).then(() => {
-    // print logins for last week
 
     return Promise.resolve(true)
   }).then(() => {
@@ -165,10 +207,26 @@ const readUserLogins = jobId => {
     )
   }).then((parsedData) => {
     // print Peak day hour day/hour
+    let rowNum = 2
+    oneWeeksAgoLogins.forEach(element => {
+      const row = sheet.getRow(rowNum)
+      const epoch = Date.parse(element.date)
+      const date = new Date(epoch)
+      console.log(dates.cookDay(date.getDay()))
+      row.values = [element.username, dates.formatEpoch(epoch), dates.cookDay(date.getDay()), element.city]
+      sheet.getCell(`A${rowNum}`).border = border
+      sheet.getCell(`B${rowNum}`).border = border
+      sheet.getCell(`C${rowNum}`).border = border
+      sheet.getCell(`D${rowNum}`).border = border
 
+      rowNum++
+    })
 
     return Promise.resolve(parsedData)
-  }).then(() => {
+  }).then((parsedData) => {
+    // print logins for last week
+
+  }).then((parsedData) => {
     // print total logins
     // console.log(`5=${fiveWeeksAgoLogins.length}`)
     // console.log(`4=${fourWeeksAgoLogins.length}`)
@@ -176,7 +234,7 @@ const readUserLogins = jobId => {
     // console.log(`2=${twoWeeksAgoLogins.length}`)
     // console.log(`1=${oneWeeksAgoLogins.length}`)
 
-    return Promise.resolve(true)
+    return Promise.resolve(parsedData)
   }).then(() => {
     // print total logins per hour of day
 
@@ -185,12 +243,10 @@ const readUserLogins = jobId => {
     // print top 10 cities
 
     return Promise.resolve(true)
-
   }).then(() => {
     // print missing cities
 
     return Promise.resolve(true)
-
   }).then(() => {
     /* eslint-disable */
     // wstream.write('\n\n');
@@ -235,11 +291,19 @@ const readUserLogins = jobId => {
     // wstream.end()
     return Promise.resolve(true)
   }).then(() => {
-    // const fileStream = fs.createReadStream(FILENAME)
-    // fileStream.on('error', function (err) {
-    //   // eslint-disable-next-line
-    //   console.log('File Error', err);
-    // })
+    sheet.getCell('A1').fill = headerFill
+    sheet.getCell('A1').font = headerFont
+    sheet.getCell('A1').border = border
+    sheet.getCell('B1').fill = headerFill
+    sheet.getCell('B1').font = headerFont
+    sheet.getCell('B1').border = border
+    sheet.getCell('C1').fill = headerFill
+    sheet.getCell('C1').font = headerFont
+    sheet.getCell('C1').border = border
+    sheet.getCell('D1').fill = headerFill
+    sheet.getCell('D1').font = headerFont
+    sheet.getCell('D1').border = border
+    return workbook.xlsx.writeFile(FILENAME)    
     // const uploadParams = {
     //   Bucket: 'cwds.cognito.userlist',
     //   Key: path.basename(FILENAME),
