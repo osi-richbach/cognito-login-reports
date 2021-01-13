@@ -67,6 +67,14 @@ exports.mondayLastWeek = () => {
   return new Date(today.setDate(diff - 7))
 }
 
+exports.recentSunday = () => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const day = today.getDay()
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(today.setDate(diff - 1))
+}
+
 exports.mondayThisWeek = () => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -93,3 +101,23 @@ exports.formatEpoch = (epoch) => {
 
   return `${thedate.getFullYear()}-${month}-${date} ${hours}:${minutes}`
 }
+
+exports.formatEpoch = (epoch) => {
+  const thedate = new Date()
+  thedate.setTime(epoch)
+
+  let month = thedate.getMonth() + 1
+  if (month < 10) month = `0${month}`
+
+  let date = thedate.getDate()
+  if (date < 10) date = `0${date}`
+
+  let hours = thedate.getHours()
+  if (hours < 10) hours = `0${hours}`
+
+  let minutes = thedate.getMinutes()
+  if (minutes < 10) minutes = `0${minutes}`
+
+  return `${thedate.getFullYear()}-${month}-${date} ${hours}:${minutes}`
+}
+

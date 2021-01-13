@@ -5,6 +5,8 @@ const Excel = require('exceljs')
 
 const fs = require('fs')
 const path = require('path')
+const dateFormat = require('dateformat')
+const FILENAME = `/Users/rich/Downloads/FailedLogins_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
 
 AWS.config.update({ region: process.env.REGION })
 
@@ -76,7 +78,6 @@ const readUserLogins = async (jobId) => {
     { header: 'FAILED LOGIN DATE', key: 'date', width: 32, style }
   ]
 
-  const filename = '/Users/rich/Downloads/failed_logins.xlsx'
   const loginsArray = []
   return ddb.scan(params).promise().then(results => {
     results.Items.forEach(element => {
@@ -106,16 +107,16 @@ const readUserLogins = async (jobId) => {
     sheet.getCell('A1').font = headerFont
     sheet.getCell('B1').fill = headerFill
     sheet.getCell('B1').font = headerFont
-    return workbook.xlsx.writeFile(filename)
+    return workbook.xlsx.writeFile(FILENAME)
   }).then(() => {
-    const fileStream = fs.createReadStream(filename)
+    const fileStream = fs.createReadStream(FILENAME)
     fileStream.on('error', function (err) {
       // eslint-disable-next-line
       console.log('File Error', err);
     })
     const uploadParams = {
       Bucket: 'cwds.cognito.userlist',
-      Key: path.basename(filename),
+      Key: path.basename(FILENAME),
       Body: fileStream
     }
 
