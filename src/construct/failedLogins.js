@@ -11,6 +11,42 @@ AWS.config.update({ region: process.env.REGION })
 // Create the DynamoDB service object
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' })
 const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
+
+const headerFont = {
+  name: 'Calibri',
+  bold: true,
+  size: 14
+}
+
+const headerFill = {
+  type: 'pattern',
+  pattern: 'lightGray'
+}
+
+const workbook = new Excel.Workbook()
+const sheet = workbook.addWorksheet('Failed Logins', {})
+const style = {
+  font: {
+    name: 'Calibri',
+    bold: false,
+    size: 11
+  },
+  border: {
+    top: { style: 'thin' },
+    left: { style: 'thin' },
+    bottom: { style: 'thin' },
+    right: { style: 'thin' }
+  },
+  alignment: {
+    vertical: 'middle',
+    horizontal: 'center'
+  },
+  fill: {
+    type: 'pattern',
+    pattern: 'none'
+  }
+}
+
 exports.handler = async (event) => {
   // eslint-disable-next-line
   console.log(`${JSON.stringify(event)}`);
@@ -35,13 +71,12 @@ const readUserLogins = async (jobId) => {
     FilterExpression: 'jobId = :j'
   }
 
-  const workbook = new Excel.Workbook()
-  const sheet = workbook.addWorksheet('Failed Logins', { properties: { tabColor: { argb: 'FFC0000' } } })
-  const row = sheet.getRow(1)
-  row.values = ['EMAIL', 'FAILED LOGIN DATE']
+  sheet.columns = [
+    { header: 'EMAIL', key: 'email', width: 32, style: style },
+    { header: 'FAILED LOGIN DATE', key: 'date', width: 32, style: style }
+  ]
 
   const filename = '/Users/rich/Downloads/failed_logins.xlsx'
-
   return ddb.scan(params).promise().then(results => {
     results.Items.forEach(element => {
       const username = element.username.S
@@ -51,10 +86,15 @@ const readUserLogins = async (jobId) => {
         const epoch = Date.parse(login.date)
         const date = new Date()
         date.setTime(epoch)
+
         sheet.addRow([username, dates.formatEpoch(epoch)])
       })
     })
   }).then(() => {
+    sheet.getCell('A1').fill = headerFill
+    sheet.getCell('A1').font = headerFont
+    sheet.getCell('B1').fill = headerFill
+    sheet.getCell('B1').font = headerFont
     return workbook.xlsx.writeFile(filename)
   }).then(() => {
     const fileStream = fs.createReadStream(filename)

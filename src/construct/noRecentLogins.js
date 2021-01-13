@@ -17,7 +17,7 @@ exports.handler = event => {
   console.log(`${JSON.stringify(event)}`);
 
   const workbook = new Excel.Workbook()
-  const sheet = workbook.addWorksheet('No Receent Logins', { properties: { tabColor: { argb: 'FFC0000' } } })
+  const sheet = workbook.addWorksheet('No Recent Logins', { properties: { tabColor: { argb: 'FFC0000' } } })
   const row = sheet.getRow(1)
   row.values = ['EMAIL', 'LAST LOGIN DATE']
   return readUnconfirmedUsers(sheet).then(() => {
