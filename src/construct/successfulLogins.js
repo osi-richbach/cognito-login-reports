@@ -471,48 +471,18 @@ const readUserLogins = jobId => {
     }
 
     return Promise.resolve(parsedData)
-  }).then(() => {
-    /* eslint-disable */
-    // wstream.write('\n\n');
-    // wstream.write('Logins/Day For XXX Y - XXX Y\n');
+  }).then((parsedData) => {
+    let row = sheet.getRow(66)
+    this.setHeaderCell(row.getCell(7), 'Last Week')
+    this.setHeaderCell(row.getCell(8), 'LAST WEEK CITY MISSING IN')
+    this.setHeaderCell(row.getCell(9), 'LAST WEEK CITY MISSING IN')
+    this.setHeaderCell(row.getCell(10), 'LAST WEEK CITY MISSING IN')
+    this.setHeaderCell(row.getCell(11), 'LAST WEEK CITY MISSING IN')
+    row = sheet.getRow(67)
+    this.setHeaderCell(row.getCell(7), 'CITY MISSING')
+    this.printDateRanges(67)
 
-    // const days = Object.keys(dayOfWeekCounter).sort();
-    // days.push(days.shift());
-    // days.forEach(day => {
-    //   wstream.write(`${(0, dates.cookDay)(parseInt(day))},${dayOfWeekCounter[day]}\n`);
-    // });
-    // /* eslint-enable */
 
-    return Promise.resolve(true)
-  }).then(() => {
-    // /* eslint-disable */
-    // wstream.write('\n\n');
-    // wstream.write('Logins Per Hour XXX Y - XXX Y\n');
-    // const hours = Object.keys(hourOfDayCounter).sort((a, b) => {
-    //   return parseInt(a) - parseInt(b);
-    // });
-    // hours.forEach(hour => {
-    //   wstream.write(`${hour},${hourOfDayCounter[hour]}\n`);
-    // });
-    // /* eslint-enable */
-
-    return Promise.resolve(true)
-  }).then(() => {
-    /* eslint-disable */
-    // wstream.write('\n\n');
-    // wstream.write('Logins/Hour/Day For XXX Y - XXX Y\n');
-    // const days = Object.keys(hourOfDayPerDayCounter).sort();
-    // days.push(days.shift());
-    // days.forEach(day => {
-    //   const hoursOfDay = Object.keys(hourOfDayPerDayCounter[day]).sort((a, b) => {
-    //     return parseInt(a) - parseInt(b);
-    //   });
-    //   hoursOfDay.forEach(hour => {
-    //     wstream.write(`${(0, dates.cookDay)(parseInt(day))},${hour},${hourOfDayPerDayCounter[day][hour]}\n`);
-    //   });
-    // });
-    // /* eslint-enable */
-    // wstream.end()
     return Promise.resolve(true)
   }).then(() => {
     sheet.getCell('A1').fill = headerFill
