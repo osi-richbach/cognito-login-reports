@@ -11,8 +11,8 @@ provider:
   name: aws
   runtime: nodejs12.x
   lambdaHashingVersion: 20201221
-  stage: dev
-  region: us-west-2
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-west-2'}
   apiGateway:
     shouldStartNameWithService: true
 
@@ -95,7 +95,7 @@ functions:
         Action:
         - dynamodb:BatchWriteItem
         Resource:
-          Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+          Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
 
   failedLoginsReport:
     handler: src/failedLoginsReport.handler
@@ -108,14 +108,14 @@ functions:
         Action:
         - dynamodb:Scan
         Resource:
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.login-report-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
       - Effect: Allow
         Action:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}      
+        - arn:aws:s3:::cwds.cognito.userlist
 
   noRecentLoginsReport:
     handler: src/noRecentLoginsReport.handler
@@ -129,14 +129,14 @@ functions:
         Action:
         - dynamodb:Scan
         Resource:
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.login-report-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
       - Effect: Allow
         Action:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}      
+        - arn:aws:s3:::cwds.cognito.userlist     
 
   successfulLoginsReport:
     handler: src/successfulLoginsReport.handler
@@ -148,14 +148,14 @@ functions:
         Action:
         - dynamodb:Scan
         Resource:
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.login-report-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
       - Effect: Allow
         Action:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}      
+        - arn:aws:s3:::cwds.cognito.userlist 
 
 stepFunctions:
   stateMachines:
@@ -212,19 +212,22 @@ stepFunctions:
             Next: FailedLoginsReport
           FailedLoginsReport:
             Type: Task
-            Resource: arn:aws:lambda:us-west-2:${AWS::AccountId}:function:cognito-ab-deployment-FailedLoginsReport FIXME
+            Resource: 
+              Fn::GetAtt: [failedLoginsReport, Arn]
             Parameters:
               job_id: placeholder
             Next: SuccessfulLoginsReport
           SuccessfulLoginsReport:
             Type: Task
-            Resource: arn:aws:lambda:us-west-2:${AWS::AccountId}:function:cognito-ab-deployment-LastWeekLoginsReport FIXME
+            Resource:  
+              Fn::GetAtt: [successfulLoginsReport, Arn]
             Parameters:
               job_id: placeholder
             Next: NoRecentLoginReport
           NoRecentLoginReport:
             Type: Task
-            Resource: arn:aws:lambda:us-west-2:${AWS::AccountId}:function:cognito-ab-deployment-NoRecentLoginReport FIXME
+            Resource:  
+              Fn::GetAtt: [noRecentLoginsReport, Arn]
             Parameters:
               job_id: placeholder
             Next: ReportsComplete

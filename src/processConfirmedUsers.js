@@ -18,7 +18,7 @@ exports.handler = event => {
   }).catch(error => {
     // eslint-disable-next-line
     console.error(`Error writing confirmed users`, error);
-    logError.logError('process_non_confirmed_user', 'multiple', JSON.parse(event), error)
+    logError.logError('process_confirmed_user', 'multiple', JSON.parse(event), error)
     throw error
   })
 }
