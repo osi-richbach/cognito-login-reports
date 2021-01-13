@@ -59,6 +59,20 @@ exports.cookDay = (day) => {
   return cookedDay
 }
 
+exports.cookHour = (hour) => {
+  let ampm
+  if (hour === 0) {
+    hour = 12
+    ampm = 'AM'
+  } else if (hour <= 23 && hour >= 13) {
+    hour = hour - 12
+    ampm = 'PM'
+  } else {
+    ampm = 'AM'
+  }
+  return `${hour} ${ampm}`
+}
+
 exports.monday5WeeksAgo = () => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -81,6 +95,14 @@ exports.recentSunday = () => {
   const day = today.getDay()
   const diff = today.getDate() - day + (day === 0 ? -6 : 1)
   return new Date(today.setDate(diff - 1))
+}
+
+exports.arbitrarySunday = (previous) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const day = today.getDay()
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(today.setDate((diff - 1) - (7 * (previous - 1))))
 }
 
 exports.mondayThisWeek = () => {

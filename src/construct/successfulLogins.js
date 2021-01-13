@@ -52,7 +52,14 @@ sheet.columns = [
   { header: 'EMAIL', key: 'email', width: 32, style },
   { header: 'DATE', key: 'date', width: 32, style },
   { header: 'DAY', key: 'day', width: 12, style },
-  { header: 'CITY', key: 'city', width: 20, style }
+  { header: 'CITY', key: 'city', width: 20, style },
+  { header: '', key: '', width: 20, style },
+  { header: '', key: '', width: 20, style },
+  { header: '', key: '', width: 16, style },
+  { header: 'TOTAL LOGINS', key: '1', width: 32, style },
+  { header: 'TOTAL LOGINS', key: '2', width: 32, style },
+  { header: 'TOTAL LOGINS', key: '3', width: 32, style },
+  { header: 'TOTAL LOGINS', key: '4', width: 32, style }
 ]
 
 // Create the DynamoDB service object
@@ -72,10 +79,81 @@ const oneWeeksAgoLogins = []
 
 exports.setHeaderCell = (cell, title) => {
   cell.value = title
+  cell.font = headerFont
+  cell.alignment = style.alignment
+  cell.border = border
+  cell.fill = headerFill
+}
+
+exports.setCell = (cell, title) => {
+  cell.value = title
   cell.font = style.font
   cell.alignment = style.alignment
   cell.border = border
   cell.fill = style.fill
+}
+
+exports.setLoginsForDay = (cell, loginsPerDayObject, day) => {
+  let count = loginsPerDayObject[`${day}`]
+  if (count === undefined) {
+    count = 0
+  }
+  this.setCell(cell, count)
+}
+
+exports.printLoginsForDay = (row, parsedData, day) => {
+  this.setLoginsForDay(row.getCell(8), parsedData.fourWeeksAgoParsed.dayOfWeekCounterObject, day)
+  this.setLoginsForDay(row.getCell(9), parsedData.threeWeeksAgoParsed.dayOfWeekCounterObject, day)
+  this.setLoginsForDay(row.getCell(10), parsedData.twoWeeksAgoParsed.dayOfWeekCounterObject, day)
+  this.setLoginsForDay(row.getCell(11), parsedData.oneWeeksAgoParsed.dayOfWeekCounterObject, day)
+}
+
+exports.setLoginsForHour = (cell, loginsPerHourObject, hour) => {
+  let count = loginsPerHourObject[`${hour}`]
+  if (count === undefined) {
+    count = 0
+  }
+
+  this.setCell(cell, count)
+}
+
+exports.printLoginsForHourOfDay = (row, parsedData, hour) => {
+  this.setLoginsForHour(row.getCell(8), parsedData.fourWeeksAgoParsed.hourOfDayCounterObject, hour)
+  this.setLoginsForHour(row.getCell(9), parsedData.threeWeeksAgoParsed.hourOfDayCounterObject, hour)
+  this.setLoginsForHour(row.getCell(10), parsedData.twoWeeksAgoParsed.hourOfDayCounterObject, hour)
+  this.setLoginsForHour(row.getCell(11), parsedData.oneWeeksAgoParsed.hourOfDayCounterObject, hour)
+}
+
+exports.formatFromTo = (weeksAgo) => {
+  const monday = dates.arbitraryMonday(weeksAgo + 1)
+  const sunday = dates.arbitrarySunday(weeksAgo)
+  return `${dateFormat(monday, 'mmm dd yyyy')} - ${dateFormat(sunday, 'mmm dd yyyy')}`
+}
+
+exports.printDateRanges = (rowNum) => {
+  const row = sheet.getRow(rowNum)
+  this.setHeaderCell(row.getCell(8), this.formatFromTo(4))
+  this.setHeaderCell(row.getCell(9), this.formatFromTo(3))
+  this.setHeaderCell(row.getCell(10), this.formatFromTo(2))
+  this.setHeaderCell(row.getCell(11), this.formatFromTo(1))
+}
+
+exports.maxDayAndLogins = (loginsPerDayObject) => {
+  const day = loginsPerDayObject[1][0]
+  const logins = loginsPerDayObject[1][1]
+
+  return `${dates.cookDay(Number(day))} - ${logins} Logins`
+}
+
+exports.maxHourAndLogins = (loginsPerHourObject) => {
+  const hour = loginsPerHourObject[1][0]
+  const logins = loginsPerHourObject[1][1]
+
+  return `${dates.cookHour(hour)} - ${logins} Logins`
+}
+
+exports.maxDayHourAndLogins = (maxDayHourObject) => {
+  return `${dates.cookDay(Number(maxDayHourObject.day))} ${dates.cookHour(maxDayHourObject.hour)} - ${maxDayHourObject.count} Logins`
 }
 
 exports.inRange = (range, date) => {
@@ -83,7 +161,10 @@ exports.inRange = (range, date) => {
 }
 
 exports.sortOnValues = (obj) => {
-  const array = Object.keys(obj).map((key) => [key, obj[key]])
+  const array = Object.keys(obj).map((key) => {
+    return [key, obj[key]]
+  })
+
   array.sort((a, b) => {
     return b[1] - a[1]
   })
@@ -134,11 +215,16 @@ exports.parseWeek = (loginsArray) => {
     incrementCityCount(cityCounter, login.city)
   })
 
+  // console.log("obj: %j", dayOfWeekCounter)
+  const dayOfWeekCounterObject = {}
+  const hourOfDayCounterObject = {}
   return {
+    dayOfWeekCounterObject: Object.assign(dayOfWeekCounterObject, dayOfWeekCounter),
     dayOfWeekCounter: this.sortOnValues(dayOfWeekCounter),
     maxDayHour: this.maxDayHour(hourOfDayPerDayCounter),
+    hourOfDayCounterObject: Object.assign(hourOfDayCounterObject, hourOfDayCounter),
     hourOfDayCounter: this.sortOnValues(hourOfDayCounter),
-    cityCounter: this.sortOnValues(cityCounter)
+    // cityCounter: this.sortOnValues(cityCounter)
   }
 }
 
@@ -206,14 +292,13 @@ const readUserLogins = jobId => {
     const threeWeeksAgoParsed = this.parseWeek(threeWeeksAgoLogins)
     const fourWeeksAgoParsed = this.parseWeek(fourWeeksAgoLogins)
     const fiveWeeksAgoParsed = this.parseWeek(fiveWeeksAgoLogins)
-
-    return Promise.resolve(
+    return Promise.resolve({
       oneWeeksAgoParsed,
       twoWeeksAgoParsed,
       threeWeeksAgoParsed,
       fourWeeksAgoParsed,
       fiveWeeksAgoParsed
-    )
+    })
   }).then((parsedData) => {
     // print Peak day hour day/hour
     let rowNum = 2
@@ -221,7 +306,6 @@ const readUserLogins = jobId => {
       const row = sheet.getRow(rowNum)
       const epoch = Date.parse(element.date)
       const date = new Date(epoch)
-      console.log(dates.cookDay(date.getDay()))
       row.values = [element.username, dates.formatEpoch(epoch), dates.cookDay(date.getDay()), element.city]
       sheet.getCell(`A${rowNum}`).border = border
       sheet.getCell(`B${rowNum}`).border = border
@@ -233,30 +317,127 @@ const readUserLogins = jobId => {
 
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
-    const row = sheet.getRow(1)
+    let row = sheet.getRow(1)
+    this.setHeaderCell(row.getCell(7), '')
     this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
     this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
     this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
     this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
+    row = sheet.getRow(2)
+    this.setHeaderCell(row.getCell(7), 'PEAK')
+    this.printDateRanges(2)
 
-  }).then((parsedData) => {
-    // print total logins
-    // console.log(`5=${fiveWeeksAgoLogins.length}`)
-    // console.log(`4=${fourWeeksAgoLogins.length}`)
-    // console.log(`3=${threeWeeksAgoLogins.length}`)
-    // console.log(`2=${twoWeeksAgoLogins.length}`)
-    // console.log(`1=${oneWeeksAgoLogins.length}`)
+    row = sheet.getRow(3)
+    this.setCell(row.getCell(7), 'DAY')
+    this.setCell(row.getCell(8), this.maxDayAndLogins(parsedData.fourWeeksAgoParsed.dayOfWeekCounter))
+    this.setCell(row.getCell(9), this.maxDayAndLogins(parsedData.threeWeeksAgoParsed.dayOfWeekCounter))
+    this.setCell(row.getCell(10), this.maxDayAndLogins(parsedData.twoWeeksAgoParsed.dayOfWeekCounter))
+    this.setCell(row.getCell(11), this.maxDayAndLogins(parsedData.oneWeeksAgoParsed.dayOfWeekCounter))
+
+    row = sheet.getRow(4)
+    this.setCell(row.getCell(7), 'HOUR')
+    this.setCell(row.getCell(8), this.maxHourAndLogins(parsedData.fourWeeksAgoParsed.hourOfDayCounter))
+    this.setCell(row.getCell(9), this.maxHourAndLogins(parsedData.threeWeeksAgoParsed.hourOfDayCounter))
+    this.setCell(row.getCell(10), this.maxHourAndLogins(parsedData.twoWeeksAgoParsed.hourOfDayCounter))
+    this.setCell(row.getCell(11), this.maxHourAndLogins(parsedData.oneWeeksAgoParsed.hourOfDayCounter))
+
+    row = sheet.getRow(5)
+    this.setCell(row.getCell(7), 'DAY/HOUR')
+    this.setCell(row.getCell(8), this.maxDayHourAndLogins(parsedData.threeWeeksAgoParsed.maxDayHour))
+    this.setCell(row.getCell(9), this.maxDayHourAndLogins(parsedData.threeWeeksAgoParsed.maxDayHour))
+    this.setCell(row.getCell(10), this.maxDayHourAndLogins(parsedData.twoWeeksAgoParsed.maxDayHour))
+    this.setCell(row.getCell(11), this.maxDayHourAndLogins(parsedData.oneWeeksAgoParsed.maxDayHour))
 
     return Promise.resolve(parsedData)
-  }).then(() => {
-    // print total logins per hour of day
+  }).then((parsedData) => {
+    let row = sheet.getRow(8)
+    this.setHeaderCell(row.getCell(7), '')
+    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
+    row = sheet.getRow(9)
+    this.setHeaderCell(row.getCell(7), '')
+    this.printDateRanges(9)
 
-    return Promise.resolve(true)
-  }).then(() => {
-    // print top 10 cities
+    row = sheet.getRow(10)
+    this.setCell(row.getCell(7), 'TOTAL')
+    this.setCell(row.getCell(8), `${fourWeeksAgoLogins.length} `)
+    this.setCell(row.getCell(9), `${threeWeeksAgoLogins.length} `)
+    this.setCell(row.getCell(10), `${twoWeeksAgoLogins.length} `)
+    this.setCell(row.getCell(11), `${oneWeeksAgoLogins.length} `)
 
-    return Promise.resolve(true)
-  }).then(() => {
+    return Promise.resolve(parsedData)
+  }).then((parsedData) => {
+    let row = sheet.getRow(13)
+    this.setHeaderCell(row.getCell(7), '')
+    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
+    row = sheet.getRow(14)
+    this.setHeaderCell(row.getCell(7), '')
+    this.printDateRanges(14)
+
+    parsedData.fourWeeksAgoParsed.dayOfWeekCounter.sort((a, b) => {
+      return a[0] - b[0]
+    })
+    parsedData.threeWeeksAgoParsed.dayOfWeekCounter.sort((a, b) => {
+      return a[0] - b[0]
+    })
+    parsedData.twoWeeksAgoParsed.dayOfWeekCounter.sort((a, b) => {
+      return a[0] - b[0]
+    })
+    parsedData.oneWeeksAgoParsed.dayOfWeekCounter.sort((a, b) => {
+      return a[0] - b[0]
+    })
+
+    row = sheet.getRow(15)
+    this.setCell(row.getCell(7), 'Monday')
+    this.printLoginsForDay(row, parsedData, 1)
+
+    row = sheet.getRow(16)
+    this.setCell(row.getCell(7), 'Tuesday')
+    this.printLoginsForDay(row, parsedData, 2)
+
+    row = sheet.getRow(17)
+    this.setCell(row.getCell(7), 'Wednesday')
+    this.printLoginsForDay(row, parsedData, 3)
+
+    row = sheet.getRow(18)
+    this.setCell(row.getCell(7), 'Thursday')
+    this.printLoginsForDay(row, parsedData, 4)
+
+    row = sheet.getRow(19)
+    this.setCell(row.getCell(7), 'Friday')
+    this.printLoginsForDay(row, parsedData, 5)
+
+    row = sheet.getRow(20)
+    this.setCell(row.getCell(7), 'Saturday')
+    this.printLoginsForDay(row, parsedData, 6)
+
+    row = sheet.getRow(21)
+    this.setCell(row.getCell(7), 'Sunday')
+    this.printLoginsForDay(row, parsedData, 0)
+
+    return Promise.resolve(parsedData)
+  }).then((parsedData) => {
+    let row = sheet.getRow(24)
+    this.setHeaderCell(row.getCell(7), '')
+    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
+    row = sheet.getRow(25)
+    this.setHeaderCell(row.getCell(7), '')
+    this.printDateRanges(25)
+    for (let i = 0; i < 24; i++) {
+      row = sheet.getRow(i + 26)
+      this.setCell(row.getCell(7), i)
+      this.printLoginsForHourOfDay(row, parsedData, i)
+    }
+    return Promise.resolve(parsedData)
+  }).then((parsedData) => {
     // print missing cities
 
     return Promise.resolve(true)
