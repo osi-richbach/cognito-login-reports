@@ -5,6 +5,7 @@ const dates = require('../util/dates')
 const fs = require('fs')
 const path = require('path')
 const dateFormat = require('dateformat')
+const { title } = require('process')
 const FILENAME = `/Users/rich/Downloads/SuccessfulLoginReport_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
 
 AWS.config.update({ region: process.env.REGION })
@@ -68,6 +69,14 @@ const fourWeeksAgoLogins = []
 const threeWeeksAgoLogins = []
 const twoWeeksAgoLogins = []
 const oneWeeksAgoLogins = []
+
+exports.setHeaderCell = (cell, title) => {
+  cell.value = title
+  cell.font = style.font
+  cell.alignment = style.alignment
+  cell.border = border
+  cell.fill = style.fill
+}
 
 exports.inRange = (range, date) => {
   return date >= range.start && date < range.end
@@ -224,7 +233,11 @@ const readUserLogins = jobId => {
 
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
-    // print logins for last week
+    const row = sheet.getRow(1)
+    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
 
   }).then((parsedData) => {
     // print total logins
