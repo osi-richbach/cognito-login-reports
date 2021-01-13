@@ -31,7 +31,7 @@ exports.inRange = (range, date) => {
 
 exports.sort = (obj) => {
   const array = Object.keys(obj).map((key) => [key, obj[key]])
-  console.log( array)
+  // console.log( array)
   array.sort((a, b) => {
     return b[1] - a[1]
   })
@@ -40,19 +40,27 @@ exports.sort = (obj) => {
 }
 
 exports.maxDayHour = (obj) => {
-  const array = Object.keys(obj).map((key) => [key, obj[key]])
+  const maxDayHour = {
+    day: 'null',
+    hour: -1,
+    count: -1
+  }
 
-  let maxDayHour = {}
-  array.forEach(element => {
-    const innerarray = Object.keys(element[0]).map((key) => [key, element[1]])
-    console.log(`innerarray is ${innerarray}`)
-  })
-  console.log( array)
-  array.sort((a, b) => {
-    return b[1] - a[1]
+  Object.keys(obj).map(day => {
+    console.log(`Working with day=${day}`)
+    Object.keys(obj[day]).map(hour => {
+      const count = obj[day][hour]
+      if (count > maxDayHour.count) {
+        maxDayHour.count = count
+        maxDayHour.day = day
+        maxDayHour.hour = hour
+      }
+      return null
+    })
+    return null
   })
 
-  return array
+  return maxDayHour
 }
 
 exports.parseWeek = (loginsArray) => {
@@ -70,12 +78,12 @@ exports.parseWeek = (loginsArray) => {
     incrementLoginsForHourOfDay(hourOfDayCounter, date.getHours())
     incrementCityCount(cityCounter, login.city)
   })
-  
+
   return {
-    //dayOfWeekCounter: this.sort(dayOfWeekCounter),
+    dayOfWeekCounter: this.sort(dayOfWeekCounter),
     maxDayHour: this.maxDayHour(hourOfDayPerDayCounter),
-    //hourOfDayCounter: this.sort(hourOfDayCounter),
-    //cityCounter: this.sort(cityCounter)
+    hourOfDayCounter: this.sort(hourOfDayCounter),
+    cityCounter: this.sort(cityCounter)
   }
 }
 
@@ -148,7 +156,6 @@ const readUserLogins = jobId => {
     const fourWeeksAgoParsed = this.parseWeek(fourWeeksAgoLogins)
     const fiveWeeksAgoParsed = this.parseWeek(fiveWeeksAgoLogins)
 
-    console.log(oneWeeksAgoParsed)
     return Promise.resolve(
       oneWeeksAgoParsed,
       twoWeeksAgoParsed,
