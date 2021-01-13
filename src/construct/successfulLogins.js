@@ -124,6 +124,22 @@ exports.printLoginsForHourOfDay = (row, parsedData, hour) => {
   this.setLoginsForHour(row.getCell(11), parsedData.oneWeeksAgoParsed.hourOfDayCounterObject, hour)
 }
 
+exports.printLoginsForCity = (cell, cityCounter, index) => {
+  let city = cityCounter[index][0]
+  const count = cityCounter[index][1]
+  if (city === undefined || city === 'null') {
+    city = 'Unknown'
+  }
+  this.setCell(cell, `${city}: ${count}`)
+}
+
+exports.printLoginsForCities = (row, parsedData, index) => {
+  this.printLoginsForCity(row.getCell(8), parsedData.fourWeeksAgoParsed.cityCounter, index)
+  this.printLoginsForCity(row.getCell(9), parsedData.threeWeeksAgoParsed.cityCounter, index)
+  this.printLoginsForCity(row.getCell(10), parsedData.twoWeeksAgoParsed.cityCounter, index)
+  this.printLoginsForCity(row.getCell(11), parsedData.oneWeeksAgoParsed.cityCounter, index)
+}
+
 exports.formatFromTo = (weeksAgo) => {
   const monday = dates.arbitraryMonday(weeksAgo + 1)
   const sunday = dates.arbitrarySunday(weeksAgo)
@@ -224,7 +240,7 @@ exports.parseWeek = (loginsArray) => {
     maxDayHour: this.maxDayHour(hourOfDayPerDayCounter),
     hourOfDayCounterObject: Object.assign(hourOfDayCounterObject, hourOfDayCounter),
     hourOfDayCounter: this.sortOnValues(hourOfDayCounter),
-    // cityCounter: this.sortOnValues(cityCounter)
+    cityCounter: this.sortOnValues(cityCounter)
   }
 }
 
@@ -343,7 +359,7 @@ const readUserLogins = jobId => {
 
     row = sheet.getRow(5)
     this.setCell(row.getCell(7), 'DAY/HOUR')
-    this.setCell(row.getCell(8), this.maxDayHourAndLogins(parsedData.threeWeeksAgoParsed.maxDayHour))
+    this.setCell(row.getCell(8), this.maxDayHourAndLogins(parsedData.fourWeeksAgoParsed.maxDayHour))
     this.setCell(row.getCell(9), this.maxDayHourAndLogins(parsedData.threeWeeksAgoParsed.maxDayHour))
     this.setCell(row.getCell(10), this.maxDayHourAndLogins(parsedData.twoWeeksAgoParsed.maxDayHour))
     this.setCell(row.getCell(11), this.maxDayHourAndLogins(parsedData.oneWeeksAgoParsed.maxDayHour))
@@ -438,9 +454,23 @@ const readUserLogins = jobId => {
     }
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
-    // print missing cities
+    let row = sheet.getRow(52)
+    this.setHeaderCell(row.getCell(7), 'TOP 10')
+    this.setHeaderCell(row.getCell(8), 'TOP 10 CITIES TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(9), 'TOP 10 CITIES TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(10), 'TOP 10 CITIES TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(11), 'TOP 10 CITIES TOTAL LOGINS')
+    row = sheet.getRow(53)
+    this.setHeaderCell(row.getCell(7), 'CITIES')
+    this.printDateRanges(53)
 
-    return Promise.resolve(true)
+    for (let i = 0; i < 10; i++) {
+      const row = sheet.getRow(i + 54)
+      this.setCell(row.getCell(7), `${(i + 1)}`)
+      this.printLoginsForCities(row, parsedData, i)
+    }
+
+    return Promise.resolve(parsedData)
   }).then(() => {
     /* eslint-disable */
     // wstream.write('\n\n');
