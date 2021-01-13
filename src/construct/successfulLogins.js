@@ -39,6 +39,22 @@ exports.sort = (obj) => {
   return array
 }
 
+exports.maxDayHour = (obj) => {
+  const array = Object.keys(obj).map((key) => [key, obj[key]])
+
+  let maxDayHour = {}
+  array.forEach(element => {
+    const innerarray = Object.keys(element[0]).map((key) => [key, element[1]])
+    console.log(`innerarray is ${innerarray}`)
+  })
+  console.log( array)
+  array.sort((a, b) => {
+    return b[1] - a[1]
+  })
+
+  return array
+}
+
 exports.parseWeek = (loginsArray) => {
   const dayOfWeekCounter = {}
   const hourOfDayPerDayCounter = {}
@@ -57,7 +73,7 @@ exports.parseWeek = (loginsArray) => {
   
   return {
     //dayOfWeekCounter: this.sort(dayOfWeekCounter),
-    hourOfDayPerDayCounter: this.sort(hourOfDayPerDayCounter),
+    maxDayHour: this.maxDayHour(hourOfDayPerDayCounter),
     //hourOfDayCounter: this.sort(hourOfDayCounter),
     //cityCounter: this.sort(cityCounter)
   }
