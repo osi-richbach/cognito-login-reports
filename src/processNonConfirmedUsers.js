@@ -14,22 +14,26 @@ exports.handler = event => {
   console.log(`${JSON.stringify(event)}`);
   // eslint-disable-next-line
 
-  const putRequests = []
-  event.users.forEach(user => {
-    // eslint-disable-next-line
-    console.log(`batching user ${JSON.stringify(user)}`);
-    const email = user.Attributes[0].Value
-    putRequests.push({
-      PutRequest: {
-        Item: {
-          username: { S: email },
-          created: { S: user.UserCreateDate }
+  if (event.users.length > 0) {
+    const putRequests = []
+    event.users.forEach(user => {
+      // eslint-disable-next-line
+      console.log(`batching user ${JSON.stringify(user)}`);
+      const email = user.Attributes[0].Value
+      putRequests.push({
+        PutRequest: {
+          Item: {
+            username: { S: email },
+            created: { S: user.UserCreateDate }
+          }
         }
-      }
+      })
     })
-  })
 
-  return writeToDynamo(putRequests)
+    return writeToDynamo(putRequests)
+  } else {
+    return Promise.resolve(true)
+  }
 }
 
 const writeToDynamo = putRequests => {
