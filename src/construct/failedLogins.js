@@ -72,11 +72,12 @@ const readUserLogins = async (jobId) => {
   }
 
   sheet.columns = [
-    { header: 'EMAIL', key: 'email', width: 32, style: style },
-    { header: 'FAILED LOGIN DATE', key: 'date', width: 32, style: style }
+    { header: 'EMAIL', key: 'email', width: 32, style },
+    { header: 'FAILED LOGIN DATE', key: 'date', width: 32, style }
   ]
 
   const filename = '/Users/rich/Downloads/failed_logins.xlsx'
+  const loginsArray = []
   return ddb.scan(params).promise().then(results => {
     results.Items.forEach(element => {
       const username = element.username.S
@@ -86,10 +87,20 @@ const readUserLogins = async (jobId) => {
         const epoch = Date.parse(login.date)
         const date = new Date()
         date.setTime(epoch)
-
-        sheet.addRow([username, dates.formatEpoch(epoch)])
+        const failedLogin = {
+          username,
+          epoch
+        }
+        loginsArray.push(failedLogin)
+        // sheet.addRow([username, dates.formatEpoch(epoch)])
       })
     })
+    loginsArray.sort((a, b) => {
+      return b.epoch - a.epoch
+    })
+
+    loginsArray.forEach(element => sheet.addRow([element.username, dates.formatEpoch(element.epoch)]))
+    return Promise.resolve(true)
   }).then(() => {
     sheet.getCell('A1').fill = headerFill
     sheet.getCell('A1').font = headerFont
