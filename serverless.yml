@@ -30,7 +30,7 @@ custom:
   user-pool-arn: arn:aws:cognito-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}
   construct-state-machine-name: construct-${self:service}-${self:provider.stage}
   construct-state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.construct-state-machine-name} 
-  state-machine-name: ${self:service}-${self:provider.stage}
+  state-machine-name: gather-${self:service}-${self:provider.stage}
   state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.state-machine-name}   
   login-report-table-name: ${self:service}-${self:provider.stage}-login-report
   non-confirmed-users-table-name: ${self:service}-${self:provider.stage}-non-confirmed-users
@@ -38,20 +38,6 @@ custom:
   find-users-dlq-sns-topic-arn: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.find-users-dlq-sns-topic} 
 
 functions:
-  # apiInitiateStateMachine:
-  #   handler: src/api/initiateLoginReport.handler
-  #   environment:
-  #     STATE_MACHINE_ARN: ${self:custom.state-machine-arn}
-  #   iamRoleStatements:
-  #     - Effect: Allow
-  #       Action:
-  #         - states:StartExecution
-  #       Resource: ${self:custom.state-machine-arn}
-  #   events:
-  #     - http: 
-  #         method: POST
-  #         path: initiate
-
   findUsers:
     handler: src/findUsers.handler
     environment:
@@ -190,18 +176,24 @@ stepFunctions:
       events:
         - http: 
             method: GET
-            path: gather       
-        - schedule: 
-            rate: cron(0 9 ? * 2 *)
-            rate: rate(1 minutes)
+            path: gather  
+        - http: 
+            method: POST
+            path: gather                   
+        - schedule: cron(0 9 ? * 2 *)  
       name: ${self:custom.state-machine-name}
       notifications:
         SUCCEEDED:
           - stepFunctions: ${self:custom.construct-state-machine-arn}    
       definition:
-        StartAt: FindUsers
+        StartAt: FindUsersInitiate
         States:
-          FindUsers:
+          FindUsersInitiate:
+            Type: Task
+            Resource: 
+              Fn::GetAtt: [findUsers, Arn]
+            Next: ProcessUsers
+          FindUsersLoop:
             Type: Task
             Parameters:
               page_token.$: "$.find_users.next_page_token"
@@ -242,7 +234,7 @@ stepFunctions:
             - Not:
                 Variable: "$.find_users.next_page_token"
                 StringEquals: NONE
-              Next: FindUsers
+              Next: FindUsersLoop
             Default: DataGatheringComplete            
           DataGatheringComplete:
             Type: Pass
