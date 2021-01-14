@@ -5,7 +5,6 @@ const dates = require('../util/dates')
 const fs = require('fs')
 const path = require('path')
 const dateFormat = require('dateformat')
-const { title } = require('process')
 const FILENAME = `/Users/rich/Downloads/SuccessfulLoginReport_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
 
 AWS.config.update({ region: process.env.REGION })
@@ -550,15 +549,20 @@ const readUserLogins = jobId => {
     sheet.getCell('D1').fill = headerFill
     sheet.getCell('D1').font = headerFont
     sheet.getCell('D1').border = border
-    return workbook.xlsx.writeFile(FILENAME)    
-    // const uploadParams = {
-    //   Bucket: 'cwds.cognito.userlist',
-    //   Key: path.basename(FILENAME),
-    //   Body: fileStream
-    // }
+    return workbook.xlsx.writeFile(FILENAME)
+  }).then(() => {
+    const fileStream = fs.createReadStream(FILENAME)
+    fileStream.on('error', function (err) {
+      // eslint-disable-next-line
+      console.log('File Error', err);
+    })
+    const uploadParams = {
+      Bucket: 'cwds.cognito.userlist',
+      Key: path.basename(FILENAME),
+      Body: fileStream
+    }
 
-    // return s3.upload(uploadParams).promise()
-        return Promise.resolve(true)
+    return s3.upload(uploadParams).promise()
   }).catch(error => {
     // eslint-disable-next-line
     console.error('Error scanning for confirmed users', error);
