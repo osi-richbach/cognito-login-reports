@@ -23,8 +23,10 @@ custom:
     userPoolId: us-west-2_FCgAM8Jlo 
 
   user-pool-arn: arn:aws:cognito-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}
+  construct-state-machine-name: construct-${self:service}-${self:provider.stage}
+  construct-state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.construct-state-machine-name} 
   state-machine-name: ${self:service}-${self:provider.stage}
-  state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.state-machine-name} 
+  state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.state-machine-name}   
   login-report-table-name: ${self:service}-${self:provider.stage}-login-report
   non-confirmed-users-table-name: ${self:service}-${self:provider.stage}-non-confirmed-users
   find-users-dlq-sns-topic: ${self:service}-${self:provider.stage}-findUsersDlq
@@ -97,66 +99,6 @@ functions:
         Resource:
           Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
 
-  failedLoginsReport:
-    handler: src/failedLoginsReport.handler
-    environment:
-      REGION: ${self:provider.region}
-      TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
-      LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}  
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-        - dynamodb:Scan
-        Resource:
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
-      - Effect: Allow
-        Action:
-        - s3:putObject
-        - s3:upload
-        Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*
-
-  noRecentLoginsReport:
-    handler: src/noRecentLoginsReport.handler
-    environment:
-      REGION: ${self:provider.region}
-      ALLOWED_DAYS_WITHOUT_LOGIN: 30
-      NON_CONFIRMED_USERS_TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
-      CONFIRMED_USERS_TABLE_NAME: ${self:custom.login-report-table-name}  
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-        - dynamodb:Scan
-        Resource:
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
-      - Effect: Allow
-        Action:
-        - s3:putObject
-        - s3:upload
-        Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*    
-
-  successfulLoginsReport:
-    handler: src/successfulLoginsReport.handler
-    environment:
-      REGION: ${self:provider.region}
-      LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}  
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-        - dynamodb:Scan
-        Resource:
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
-      - Effect: Allow
-        Action:
-        - s3:putObject
-        - s3:upload
-        Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*
-
   failedLogins:
     handler: src/construct/failedLogins.handler
     environment:
@@ -175,7 +117,7 @@ functions:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*
+        - arn:aws:s3:::weeklyloginreports20xx/reports/*
   
   noRecentLogins:
     handler: src/construct/noRecentLogins.handler
@@ -195,7 +137,7 @@ functions:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*        
+        - arn:aws:s3:::weeklyloginreports20xx/reports/*        
 
   successfulLogins:
     handler: src/construct/successfulLogins.handler
@@ -214,12 +156,17 @@ functions:
         - s3:putObject
         - s3:upload
         Resource:
-        - arn:aws:s3:::cwds.cognito.userlist/*   
+        - arn:aws:s3:::weeklyloginreports20xx/reports/*   
 
 stepFunctions:
   stateMachines:
     GatherWeeklyLoginData:
+      events:
+        - schedule: cron(0 9 ? * 2 *)
       name: ${self:custom.state-machine-name}
+      notifications:
+        SUCCEEDED:
+          - stepFunctions: ${self:custom.construct-state-machine-arn}    
       definition:
         StartAt: FindUsers
         States:
@@ -268,32 +215,36 @@ stepFunctions:
             Default: DataGatheringComplete            
           DataGatheringComplete:
             Type: Pass
-            Next: FailedLoginsReport
+            End: true
+    ConstructLoginReports:
+      name: ${self:custom.construct-state-machine-name}
+      definition:
+        StartAt: FailedLoginsReport
+        States:
           FailedLoginsReport:
             Type: Task
             Resource: 
-              Fn::GetAtt: [failedLoginsReport, Arn]
+              Fn::GetAtt: [failedLogins, Arn]
             Parameters:
               job_id: placeholder
             Next: SuccessfulLoginsReport
           SuccessfulLoginsReport:
             Type: Task
             Resource:  
-              Fn::GetAtt: [successfulLoginsReport, Arn]
+              Fn::GetAtt: [successfulLogins, Arn]
             Parameters:
               job_id: placeholder
             Next: NoRecentLoginReport
           NoRecentLoginReport:
             Type: Task
             Resource:  
-              Fn::GetAtt: [noRecentLoginsReport, Arn]
+              Fn::GetAtt: [noRecentLogins, Arn]
             Parameters:
               job_id: placeholder
             Next: ReportsComplete
           ReportsComplete:
             Type: Pass
-            End: true            
-
+            End: true                
 resources:
   Resources:
     nonConfirmedUsersTable:

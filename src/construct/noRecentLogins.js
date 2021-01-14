@@ -86,8 +86,8 @@ exports.handler = event => {
       console.log('File Error', err);
     })
     const uploadParams = {
-      Bucket: 'cwds.cognito.userlist',
-      Key: path.basename(FILENAME),
+      Bucket: 'weeklyloginreports20xx',
+      Key: `reports/${path.basename(FILENAME)}`,
       Body: fileStream
     }
 
