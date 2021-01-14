@@ -22,7 +22,9 @@ const headerFont = {
 
 const headerFill = {
   type: 'pattern',
-  pattern: 'lightGray'
+  pattern: 'solid',
+  bgColor: { argb: 'cbcfd6' },
+  fgColor: { argb: 'cbcfd6' }
 }
 
 const workbook = new Excel.Workbook()
