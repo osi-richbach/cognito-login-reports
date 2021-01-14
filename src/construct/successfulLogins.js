@@ -140,6 +140,17 @@ exports.printLoginsForCities = (row, parsedData, index) => {
   this.printLoginsForCity(row.getCell(11), parsedData.oneWeeksAgoParsed.cityCounter, index)
 }
 
+exports.findNewValues = (array, compareToArray) => {
+  const newValues = []
+  array.forEach(element => {
+    if (!compareToArray.includes(element)) {
+      newValues.push(element)
+    }
+  })
+
+  return newValues
+}
+
 exports.formatFromTo = (weeksAgo) => {
   const monday = dates.arbitraryMonday(weeksAgo + 1)
   const sunday = dates.arbitrarySunday(weeksAgo)
@@ -170,6 +181,16 @@ exports.maxHourAndLogins = (loginsPerHourObject) => {
 
 exports.maxDayHourAndLogins = (maxDayHourObject) => {
   return `${dates.cookDay(Number(maxDayHourObject.day))} ${dates.cookHour(maxDayHourObject.hour)} - ${maxDayHourObject.count} Logins`
+}
+
+exports.printNewCityFromArray = (cell, array, index) => {
+  let city
+  if (index + 1 > array.length) {
+    city = ''
+  } else {
+    city = array[index]
+  }
+  this.setCell(cell, city)
 }
 
 exports.inRange = (range, date) => {
@@ -473,7 +494,7 @@ const readUserLogins = jobId => {
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
     let row = sheet.getRow(66)
-    this.setHeaderCell(row.getCell(7), 'Last Week')
+    this.setHeaderCell(row.getCell(7), 'LAST WEEK')
     this.setHeaderCell(row.getCell(8), 'LAST WEEK CITY MISSING IN')
     this.setHeaderCell(row.getCell(9), 'LAST WEEK CITY MISSING IN')
     this.setHeaderCell(row.getCell(10), 'LAST WEEK CITY MISSING IN')
@@ -482,6 +503,38 @@ const readUserLogins = jobId => {
     this.setHeaderCell(row.getCell(7), 'CITY MISSING')
     this.printDateRanges(67)
 
+    const fiveWeeksAgoArray = parsedData.fiveWeeksAgoParsed.cityCounter.map(element => element[0])
+    const fourWeeksAgoArray = parsedData.fourWeeksAgoParsed.cityCounter.map(element => element[0])
+    const threeWeeksAgoArray = parsedData.threeWeeksAgoParsed.cityCounter.map(element => element[0])
+    const twoWeeksAgoArray = parsedData.twoWeeksAgoParsed.cityCounter.map(element => element[0])
+    const oneWeeksAgoArray = parsedData.oneWeeksAgoParsed.cityCounter.map(element => element[0])
+
+    const newCities4WeeksAgo = this.findNewValues(fourWeeksAgoArray, fiveWeeksAgoArray).sort()
+    const newCities3WeeksAgo = this.findNewValues(threeWeeksAgoArray, fourWeeksAgoArray).sort()
+    const newCities2WeeksAgo = this.findNewValues(twoWeeksAgoArray, threeWeeksAgoArray).sort()
+    const newCities1WeeksAgo = this.findNewValues(oneWeeksAgoArray, twoWeeksAgoArray).sort()
+
+    const maxLength = Math.max(newCities4WeeksAgo.length, newCities3WeeksAgo.length, newCities2WeeksAgo.length, newCities1WeeksAgo.length)
+
+    for (let i = 0; i < maxLength; i++) {
+      row = sheet.getRow(i + 68)
+      this.setCell(row.getCell(7), `${i + 1}`)
+      this.printNewCityFromArray(row.getCell(8), newCities4WeeksAgo, i)
+      this.printNewCityFromArray(row.getCell(9), newCities3WeeksAgo, i)
+      this.printNewCityFromArray(row.getCell(10), newCities2WeeksAgo, i)
+      this.printNewCityFromArray(row.getCell(11), newCities1WeeksAgo, i)
+    }
+
+    // console.log(newCities4WeeksAgo)
+    // console.log(newCities3WeeksAgo)
+    // console.log(newCities2WeeksAgo)
+    // console.log(newCities1WeeksAgo)
+
+    // console.log(fiveWeeksAgoArray)
+    // console.log(fourWeeksAgoArray)
+    // console.log(threeWeeksAgoArray)
+    // console.log(twoWeeksAgoArray)
+    // console.log(oneWeeksAgoArray)
 
     return Promise.resolve(true)
   }).then(() => {
