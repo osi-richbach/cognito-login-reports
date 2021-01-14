@@ -5,7 +5,7 @@ const path = require('path')
 const nodemailer = require('nodemailer')
 
 const s3 = new AWS.S3()
-const ses = new AWS.SES()
+const ses = new AWS.SES({ region: process.env.REGION })
 
 exports.handler = event => {
   // eslint-disable-next-line
@@ -43,7 +43,7 @@ const downloadFile = (key) => {
 
 const sendEmail = (event, filedata) => {
   const mailOptions = {
-    from: 'ken.hamilton@osi.ca.gov',
+    from: process.env.EMAIL_FROM,
     subject: 'Weekly Login Report',
     html: '<p>Hi Khosrow,<br/>Attached are last week\'s login reports.<br/>Thanks.</p>',
     to: process.env.EMAIL_TO,
