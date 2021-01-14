@@ -11,7 +11,7 @@ AWS.config.update({ region: process.env.REGION })
 // Create the DynamoDB service object
 const ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' })
 const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
-const FILENAME = `/Users/rich/Downloads/NoRecentLogins_${dateFormat(new Date(), 'mmmm_dd_yyyy')}.xlsx`
+const FILENAME = `/tmp/NoRecentLogins_${dateFormat(new Date(), 'mmmm_dd_yyyy')}.xlsx`
 
 const headerFont = {
   name: 'Calibri',
@@ -86,14 +86,14 @@ exports.handler = event => {
       console.log('File Error', err);
     })
     const uploadParams = {
-      Bucket: 'weeklyloginreports20xx',
+      Bucket: process.env.REPORTS_BUCKET_NAME,
       Key: `reports/${path.basename(FILENAME)}`,
       Body: fileStream
     }
 
     return s3.upload(uploadParams).promise()
   }).then(() => {
-    return Promise.resolve(true)
+    return Promise.resolve(`reports/${path.basename(FILENAME)}`)
   }).catch(error => {
     // eslint-disable-next-line
     console.error('Error scanning for confirmed users', error);

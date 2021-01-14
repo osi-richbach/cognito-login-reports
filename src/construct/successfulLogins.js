@@ -5,7 +5,7 @@ const dates = require('../util/dates')
 const fs = require('fs')
 const path = require('path')
 const dateFormat = require('dateformat')
-const FILENAME = `/Users/rich/Downloads/SuccessfulLoginReport_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
+const FILENAME = `/tmp/SuccessfulLoginReport_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
 
 AWS.config.update({ region: process.env.REGION })
 
@@ -532,12 +532,14 @@ exports.handler = async event => {
       console.log('File Error', err);
     })
     const uploadParams = {
-      Bucket: 'weeklyloginreports20xx',
+      Bucket: process.env.REPORTS_BUCKET_NAME,
       Key: `reports/${path.basename(FILENAME)}`,
       Body: fileStream
     }
 
     return s3.upload(uploadParams).promise()
+  }).then(() => {
+    return Promise.resolve(`reports/${path.basename(FILENAME)}`)
   }).catch(error => {
     // eslint-disable-next-line
     console.error('Error scanning for confirmed users', error);

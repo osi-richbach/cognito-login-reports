@@ -6,7 +6,7 @@ const Excel = require('exceljs')
 const fs = require('fs')
 const path = require('path')
 const dateFormat = require('dateformat')
-const FILENAME = `/Users/rich/Downloads/FailedLogins_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
+const FILENAME = `/tmp/FailedLogins_${dateFormat(dates.mondayLastWeek(), 'mmm-dd-yyyy')}-to-${dateFormat(dates.recentSunday(), 'mmm-dd-yyyy')}.xlsx`
 
 AWS.config.update({ region: process.env.REGION })
 
@@ -56,7 +56,7 @@ exports.handler = async (event) => {
   console.log(`${JSON.stringify(event)}`);
 
   return readUserLogins(event.job_id).then(() => {
-    return true
+    return Promise.resolve(`reports/${path.basename(FILENAME)}`)
   }).catch(error => {
     // eslint-disable-next-line
     console.error('Error scanning for confirmed users', error);
@@ -117,14 +117,14 @@ const readUserLogins = async (jobId) => {
       console.log('File Error', err);
     })
     const uploadParams = {
-      Bucket: 'weeklyloginreports20xx',
+      Bucket: process.env.REPORTS_BUCKET_NAME,
       Key: `reports/${path.basename(FILENAME)}`,
       Body: fileStream
     }
 
     return s3.upload(uploadParams).promise()
   }).then(() => {
-    return Promise.resolve(true)
+    return Promise.resolve(`reports/${path.basename(FILENAME)}`)
   }).catch(error => {
     // eslint-disable-next-line
     console.error('Error writing report', error);

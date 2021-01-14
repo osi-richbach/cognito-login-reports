@@ -22,6 +22,7 @@ custom:
   prod:
     userPoolId: us-west-2_FCgAM8Jlo 
 
+  reports-bucket-name: weeklyloginreports20xx
   user-pool-arn: arn:aws:cognito-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}
   construct-state-machine-name: construct-${self:service}-${self:provider.stage}
   construct-state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.construct-state-machine-name} 
@@ -105,6 +106,7 @@ functions:
       REGION: ${self:provider.region}
       TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
       LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}  
+      REPORTS_BUCKET_NAME: ${self:custom.reports-bucket-name} 
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -125,6 +127,7 @@ functions:
       REGION: ${self:provider.region}
       NON_CONFIRMED_USERS_TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
       CONFIRMED_USERS_TABLE_NAME: ${self:custom.login-report-table-name} 
+      REPORTS_BUCKET_NAME: ${self:custom.reports-bucket-name} 
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -144,6 +147,7 @@ functions:
     environment:
       REGION: ${self:provider.region}
       LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name} 
+      REPORTS_BUCKET_NAME: ${self:custom.reports-bucket-name} 
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -155,6 +159,18 @@ functions:
         Action:
         - s3:putObject
         - s3:upload
+        Resource:
+        - arn:aws:s3:::weeklyloginreports20xx/reports/*   
+
+  sendEmail:
+    handler: src/construct/sendEmail.handler
+    environment:
+      REGION: ${self:provider.region}
+      REPORTS_BUCKET_NAME: ${self:custom.reports-bucket-name} 
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+        - s3:*
         Resource:
         - arn:aws:s3:::weeklyloginreports20xx/reports/*   
 
@@ -227,6 +243,7 @@ stepFunctions:
               Fn::GetAtt: [failedLogins, Arn]
             Parameters:
               job_id: placeholder
+            ResultPath: "$.failed_logins_filename"  
             Next: SuccessfulLoginsReport
           SuccessfulLoginsReport:
             Type: Task
@@ -234,6 +251,7 @@ stepFunctions:
               Fn::GetAtt: [successfulLogins, Arn]
             Parameters:
               job_id: placeholder
+            ResultPath: "$.successful_logins_filename"  
             Next: NoRecentLoginReport
           NoRecentLoginReport:
             Type: Task
@@ -241,7 +259,17 @@ stepFunctions:
               Fn::GetAtt: [noRecentLogins, Arn]
             Parameters:
               job_id: placeholder
-            Next: ReportsComplete
+            ResultPath: "$.no_recent_login_filename"   
+            Next: SendEmail
+          SendEmail:
+            Type: Task
+            Resource:  
+              Fn::GetAtt: [sendEmail, Arn]
+            Parameters:
+              successful_logins_filename: "$.successful_logins_filename"
+              no_recent_login_filename: "$.no_recent_login_filename"
+              failed_logins_filename: "$.failed_logins_filename"
+            Next: ReportsComplete            
           ReportsComplete:
             Type: Pass
             End: true                
