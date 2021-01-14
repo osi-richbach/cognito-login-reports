@@ -289,73 +289,13 @@ exports.parseWeek = (loginsArray) => {
     cityCounter: this.sortOnValues(cityCounter)
   }
 }
-
+let userCount = 0
 exports.handler = async event => {
   // eslint-disable-next-line
   console.log(`${JSON.stringify(event)}`);
 
   return readUserLogins(event.job_id).then(() => {
-    return true
-  }).catch(error => {
-    // eslint-disable-next-line
-    console.error('Error scanning for confirmed users', error);
-    throw error
-  })
-}
-
-let userCount = 0
-const readUserLogins = async (jobId, lastEvaluatedKey = null) => {
-  const params = {
-    TableName: process.env.LOGIN_REPORT_TABLE_NAME,
-    ExpressionAttributeValues: {
-      ':j': {
-        S: jobId
-      }
-    },
-    FilterExpression: 'jobId = :j'
-  }
-  if (lastEvaluatedKey !== null) {
-    params.ExclusiveStartKey = lastEvaluatedKey
-  }
-  return ddb.scan(params).promise().then(async results => {
-    results.Items.forEach(element => {
-      userCount++
-      const username = element.username.S
-      const loginsLastWeek = JSON.parse(element.loginData.S).logins_last_week
-
-      loginsLastWeek.forEach(login => {
-        const epoch = Date.parse(login.date)
-        const date = new Date()
-        date.setTime(epoch)
-        let loginsArray = null
-        if (this.inRange(fiveWeeksAgo, date)) {
-          loginsArray = fiveWeeksAgoLogins
-        } else if (this.inRange(fourWeeksAgo, date)) {
-          loginsArray = fourWeeksAgoLogins
-        } else if (this.inRange(threeWeeksAgo, date)) {
-          loginsArray = threeWeeksAgoLogins
-        } else if (this.inRange(twoWeeksAgo, date)) {
-          loginsArray = twoWeeksAgoLogins
-        } else if (this.inRange(oneWeeksAgo, date)) {
-          loginsArray = oneWeeksAgoLogins
-        }
-
-        if (loginsArray !== null) {
-          loginsArray.push({
-            username,
-            date,
-            city: login.city
-          })
-        }
-      })
-    })
-    if (results.LastEvaluatedKey !== undefined) {
-      console.log(`LastEvaluatedKey = ${results.LastEvaluatedKey}`)
-      return readUserLogins(jobId, results.LastEvaluatedKey)
-    } else {
-      console.log('returning from reading users')
-      return Promise.resolve(true)
-    }
+    return Promise.resolve(true)
   }).then(() => {
     console.log(`READ A TOTAL OF ${userCount} users from the login report table`)
     const oneWeeksAgoParsed = this.parseWeek(oneWeeksAgoLogins)
@@ -602,6 +542,61 @@ const readUserLogins = async (jobId, lastEvaluatedKey = null) => {
     // eslint-disable-next-line
     console.error('Error scanning for confirmed users', error);
     throw error
+  })
+}
+
+const readUserLogins = async (jobId, lastEvaluatedKey = null) => {
+  const params = {
+    TableName: process.env.LOGIN_REPORT_TABLE_NAME,
+    ExpressionAttributeValues: {
+      ':j': {
+        S: jobId
+      }
+    },
+    FilterExpression: 'jobId = :j'
+  }
+  if (lastEvaluatedKey !== null) {
+    params.ExclusiveStartKey = lastEvaluatedKey
+  }
+  return ddb.scan(params).promise().then(async results => {
+    results.Items.forEach(element => {
+      userCount++
+      const username = element.username.S
+      const loginsLastWeek = JSON.parse(element.loginData.S).logins_last_week
+
+      loginsLastWeek.forEach(login => {
+        const epoch = Date.parse(login.date)
+        const date = new Date()
+        date.setTime(epoch)
+        let loginsArray = null
+        if (this.inRange(fiveWeeksAgo, date)) {
+          loginsArray = fiveWeeksAgoLogins
+        } else if (this.inRange(fourWeeksAgo, date)) {
+          loginsArray = fourWeeksAgoLogins
+        } else if (this.inRange(threeWeeksAgo, date)) {
+          loginsArray = threeWeeksAgoLogins
+        } else if (this.inRange(twoWeeksAgo, date)) {
+          loginsArray = twoWeeksAgoLogins
+        } else if (this.inRange(oneWeeksAgo, date)) {
+          loginsArray = oneWeeksAgoLogins
+        }
+
+        if (loginsArray !== null) {
+          loginsArray.push({
+            username,
+            date,
+            city: login.city
+          })
+        }
+      })
+    })
+    if (results.LastEvaluatedKey !== undefined) {
+      console.log(`LastEvaluatedKey = ${results.LastEvaluatedKey}`)
+      return readUserLogins(jobId, results.LastEvaluatedKey)
+    } else {
+      console.log('returning from reading users')
+      return Promise.resolve(true)
+    }
   })
 }
 
