@@ -18,6 +18,24 @@ const border = {
   right: { style: 'thin' }
 }
 
+const headerBorderTop = {
+  top: { style: 'thin' },
+  left: { style: 'thin' },
+  right: { style: 'thin' }
+}
+
+const headerBorderBottom = {
+  left: { style: 'thin' },
+  bottom: { style: 'thin' },
+  right: { style: 'thin' }
+}
+
+const headerFontNonBold = {
+  name: 'Calibri',
+  bold: false,
+  size: 14
+}
+
 const headerFont = {
   name: 'Calibri',
   bold: true,
@@ -78,11 +96,11 @@ const threeWeeksAgoLogins = []
 const twoWeeksAgoLogins = []
 const oneWeeksAgoLogins = []
 
-exports.setHeaderCell = (cell, title) => {
+exports.setHeaderCell = (cell, title, theborder = border) => {
   cell.value = title
   cell.font = headerFont
   cell.alignment = style.alignment
-  cell.border = border
+  cell.border = theborder
   cell.fill = headerFill
 }
 
@@ -160,10 +178,10 @@ exports.formatFromTo = (weeksAgo) => {
 
 exports.printDateRanges = (rowNum) => {
   const row = sheet.getRow(rowNum)
-  this.setHeaderCell(row.getCell(8), this.formatFromTo(4))
-  this.setHeaderCell(row.getCell(9), this.formatFromTo(3))
-  this.setHeaderCell(row.getCell(10), this.formatFromTo(2))
-  this.setHeaderCell(row.getCell(11), this.formatFromTo(1))
+  this.setHeaderCell(row.getCell(8), this.formatFromTo(4), headerBorderBottom)
+  this.setHeaderCell(row.getCell(9), this.formatFromTo(3), headerBorderBottom)
+  this.setHeaderCell(row.getCell(10), this.formatFromTo(2), headerBorderBottom)
+  this.setHeaderCell(row.getCell(11), this.formatFromTo(1), headerBorderBottom)
 }
 
 exports.maxDayAndLogins = (loginsPerDayObject) => {
@@ -356,13 +374,13 @@ const readUserLogins = jobId => {
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
     let row = sheet.getRow(1)
-    this.setHeaderCell(row.getCell(7), '')
-    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(7), '', headerBorderTop)
+    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS', headerBorderTop)
     row = sheet.getRow(2)
-    this.setHeaderCell(row.getCell(7), 'PEAK')
+    this.setHeaderCell(row.getCell(7), 'PEAK', headerBorderBottom)
     this.printDateRanges(2)
 
     row = sheet.getRow(3)
@@ -389,13 +407,13 @@ const readUserLogins = jobId => {
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
     let row = sheet.getRow(8)
-    this.setHeaderCell(row.getCell(7), '')
-    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(7), '', headerBorderTop)
+    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS', headerBorderTop)
     row = sheet.getRow(9)
-    this.setHeaderCell(row.getCell(7), '')
+    this.setHeaderCell(row.getCell(7), '', headerBorderBottom)
     this.printDateRanges(9)
 
     row = sheet.getRow(10)
@@ -408,13 +426,13 @@ const readUserLogins = jobId => {
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
     let row = sheet.getRow(13)
-    this.setHeaderCell(row.getCell(7), '')
-    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(7), '', headerBorderTop)
+    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS', headerBorderTop)
     row = sheet.getRow(14)
-    this.setHeaderCell(row.getCell(7), '')
+    this.setHeaderCell(row.getCell(7), '', headerBorderBottom)
     this.printDateRanges(14)
 
     parsedData.fourWeeksAgoParsed.dayOfWeekCounter.sort((a, b) => {
@@ -461,13 +479,13 @@ const readUserLogins = jobId => {
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
     let row = sheet.getRow(24)
-    this.setHeaderCell(row.getCell(7), '')
-    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(7), '', headerBorderTop)
+    this.setHeaderCell(row.getCell(8), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(9), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(10), 'TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(11), 'TOTAL LOGINS', headerBorderTop)
     row = sheet.getRow(25)
-    this.setHeaderCell(row.getCell(7), '')
+    this.setHeaderCell(row.getCell(7), '', headerBorderBottom)
     this.printDateRanges(25)
     for (let i = 0; i < 24; i++) {
       row = sheet.getRow(i + 26)
@@ -477,13 +495,13 @@ const readUserLogins = jobId => {
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
     let row = sheet.getRow(52)
-    this.setHeaderCell(row.getCell(7), 'TOP 10')
-    this.setHeaderCell(row.getCell(8), 'TOP 10 CITIES TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(9), 'TOP 10 CITIES TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(10), 'TOP 10 CITIES TOTAL LOGINS')
-    this.setHeaderCell(row.getCell(11), 'TOP 10 CITIES TOTAL LOGINS')
+    this.setHeaderCell(row.getCell(7), 'TOP 10', headerBorderTop)
+    this.setHeaderCell(row.getCell(8), 'TOP 10 CITIES TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(9), 'TOP 10 CITIES TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(10), 'TOP 10 CITIES TOTAL LOGINS', headerBorderTop)
+    this.setHeaderCell(row.getCell(11), 'TOP 10 CITIES TOTAL LOGINS', headerBorderTop)
     row = sheet.getRow(53)
-    this.setHeaderCell(row.getCell(7), 'CITIES')
+    this.setHeaderCell(row.getCell(7), 'CITIES', headerBorderBottom)
     this.printDateRanges(53)
 
     for (let i = 0; i < 10; i++) {
@@ -495,13 +513,13 @@ const readUserLogins = jobId => {
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
     let row = sheet.getRow(66)
-    this.setHeaderCell(row.getCell(7), 'LAST WEEK')
-    this.setHeaderCell(row.getCell(8), 'LAST WEEK CITY MISSING IN')
-    this.setHeaderCell(row.getCell(9), 'LAST WEEK CITY MISSING IN')
-    this.setHeaderCell(row.getCell(10), 'LAST WEEK CITY MISSING IN')
-    this.setHeaderCell(row.getCell(11), 'LAST WEEK CITY MISSING IN')
+    this.setHeaderCell(row.getCell(7), 'LAST WEEK', headerBorderTop)
+    this.setHeaderCell(row.getCell(8), 'LAST WEEK CITY MISSING IN', headerBorderTop)
+    this.setHeaderCell(row.getCell(9), 'LAST WEEK CITY MISSING IN', headerBorderTop)
+    this.setHeaderCell(row.getCell(10), 'LAST WEEK CITY MISSING IN', headerBorderTop)
+    this.setHeaderCell(row.getCell(11), 'LAST WEEK CITY MISSING IN', headerBorderTop)
     row = sheet.getRow(67)
-    this.setHeaderCell(row.getCell(7), 'CITY MISSING')
+    this.setHeaderCell(row.getCell(7), 'CITY MISSING', headerBorderBottom)
     this.printDateRanges(67)
 
     const fiveWeeksAgoArray = parsedData.fiveWeeksAgoParsed.cityCounter.map(element => element[0])
