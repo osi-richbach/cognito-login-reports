@@ -290,7 +290,7 @@ exports.parseWeek = (loginsArray) => {
   }
 }
 
-exports.handler = event => {
+exports.handler = async event => {
   // eslint-disable-next-line
   console.log(`${JSON.stringify(event)}`);
 
@@ -303,7 +303,8 @@ exports.handler = event => {
   })
 }
 
-const readUserLogins = jobId => {
+let userCount = 0
+const readUserLogins = async (jobId, lastEvaluatedKey = null) => {
   const params = {
     TableName: process.env.LOGIN_REPORT_TABLE_NAME,
     ExpressionAttributeValues: {
@@ -313,11 +314,13 @@ const readUserLogins = jobId => {
     },
     FilterExpression: 'jobId = :j'
   }
-
-  return ddb.scan(params).promise().then(results => {
+  if (lastEvaluatedKey !== null) {
+    params.ExclusiveStartKey = lastEvaluatedKey
+  }
+  return ddb.scan(params).promise().then(async results => {
     results.Items.forEach(element => {
+      userCount++
       const username = element.username.S
-      // NOTE : logins_last_week is a bad name, it is logins from the last 5 weeks.
       const loginsLastWeek = JSON.parse(element.loginData.S).logins_last_week
 
       loginsLastWeek.forEach(login => {
@@ -336,7 +339,7 @@ const readUserLogins = jobId => {
         } else if (this.inRange(oneWeeksAgo, date)) {
           loginsArray = oneWeeksAgoLogins
         }
-        // wstream.write(`${username},${(0, dates.formatEpoch)(epoch)},${(0, dates.dayOfWeek)(date)},${login.city}\n`)
+
         if (loginsArray !== null) {
           loginsArray.push({
             username,
@@ -346,9 +349,15 @@ const readUserLogins = jobId => {
         }
       })
     })
-
-    return Promise.resolve(true)
+    if (results.LastEvaluatedKey !== undefined) {
+      console.log(`LastEvaluatedKey = ${results.LastEvaluatedKey}`)
+      return readUserLogins(jobId, results.LastEvaluatedKey)
+    } else {
+      console.log('returning from reading users')
+      return Promise.resolve(true)
+    }
   }).then(() => {
+    console.log(`READ A TOTAL OF ${userCount} users from the login report table`)
     const oneWeeksAgoParsed = this.parseWeek(oneWeeksAgoLogins)
     const twoWeeksAgoParsed = this.parseWeek(twoWeeksAgoLogins)
     const threeWeeksAgoParsed = this.parseWeek(threeWeeksAgoLogins)
@@ -362,13 +371,13 @@ const readUserLogins = jobId => {
       fiveWeeksAgoParsed
     })
   }).then((parsedData) => {
-    // print Peak day hour day/hour
     let rowNum = 2
     oneWeeksAgoLogins.forEach(element => {
       const row = sheet.getRow(rowNum)
       const epoch = Date.parse(element.date)
       const date = new Date(epoch)
-      row.values = [element.username, dates.formatEpoch(epoch), dates.cookDay(date.getDay()), element.city]
+      const city = element.city === 'null' ? 'UNKNOWN' : element.city
+      row.values = [element.username, dates.formatEpoch(epoch), dates.cookDay(date.getDay()), city]
       sheet.getCell(`A${rowNum}`).border = border
       sheet.getCell(`B${rowNum}`).border = border
       sheet.getCell(`C${rowNum}`).border = border
