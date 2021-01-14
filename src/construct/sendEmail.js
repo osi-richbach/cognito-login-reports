@@ -1,6 +1,6 @@
 'use strict'
 const AWS = require('aws-sdk')
-const fs = require('fs')
+// const fs = require('fs')
 const path = require('path')
 const nodemailer = require('nodemailer')
 
@@ -11,34 +11,24 @@ exports.handler = event => {
   // eslint-disable-next-line
   console.log(`${JSON.stringify(event)}`);
 
+  const filedata = {}
   return downloadFile(event.failed_logins_filename)
     .then((data) => {
-      console.log(path.basename(event.failed_logins_filename))
-      fs.writeFileSync(`/tmp/${path.basename(event.failed_logins_filename)}`, data.Body)
-      console.log(`${event.failed_logins_filename} downloaded successfully`)
-      return Promise.resolve(true)
-    }).then(() => {
+      filedata.failed_logins_file = data.Body
       return downloadFile(event.no_recent_login_filename)
     }).then((data) => {
-      console.log(path.basename(event.no_recent_login_filename))
-      fs.writeFileSync(`/tmp/${path.basename(event.no_recent_login_filename)}`, data.Body)
-      console.log(`${event.no_recent_login_filename} downloaded successfully`)
-      return Promise.resolve(true)
-    }).then(() => {
+      filedata.no_recent_login_file = data.Body
       return downloadFile(event.successful_logins_filename)
     }).then((data) => {
-      console.log(path.basename(event.successful_logins_filename))
-      fs.writeFileSync(`/tmp/${path.basename(event.successful_logins_filename)}`, data.Body)
-      console.log(`${event.successful_logins_filename} downloaded successfully`)
-      return Promise.resolve(true)
-    }).then(() => {
-      return sendEmail()
-    }).then(() => {
+      filedata.successful_logins_file = data.Body
+      return sendEmail(event, filedata)
+    }).then((data) => {
       console.log('EMAIL HAS BEEN SENT')
+      console.log(data)
       return Promise.resolve(true)
     }).catch(error => {
       // eslint-disable-next-line
-      console.error('Error finding users', error);
+      console.error('Error Sending Reports', error);
       throw error
     })
 }
@@ -51,19 +41,29 @@ const downloadFile = (key) => {
   return s3.getObject(params).promise()
 }
 
-const sendEmail = () => {
+const sendEmail = (event, filedata) => {
   const mailOptions = {
     from: 'ken.hamilton@osi.ca.gov',
     subject: 'Weekly Login Report',
     html: '<p>Hi Khosrow,<br/>Attached are last week\'s login reports.<br/>Thanks.</p>',
-    to: 'rich.bach@osi.ca.gov',
+    to: process.env.EMAIL_TO,
     attachments: [
-    {
-        filename: "An Attachment.pdf",
-        content: fileData.Body
-    }
-]
+      {
+        filename: `${path.basename(event.failed_logins_filename)}`,
+        content: filedata.failed_logins_file
+      },
+      {
+        filename: `${path.basename(event.no_recent_login_filename)}`,
+        content: filedata.no_recent_login_file
+      },
+      {
+        filename: `${path.basename(event.successful_logins_filename)}`,
+        content: filedata.successful_logins_file
+      }
+    ]
   }
+
+  console.log(mailOptions)
 
   // create Nodemailer SES transporter
   const transporter = nodemailer.createTransport({

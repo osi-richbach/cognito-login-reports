@@ -19,10 +19,14 @@ provider:
 custom:
   dev:
     userPoolId: us-west-2_FCgAM8Jlo
+    emailTo: "rich.bach@osi.ca.gov, richard@ontargetcomputing.net"
+    reports-bucket-name: cwds.cognito.userlist
   prod:
     userPoolId: us-west-2_FCgAM8Jlo 
+    emailTo: "rich.bach@osi.ca.gov, ken.hamilton@osi.ca.gov, khosrow.mamnoon@osi.ca.gov"
+    reports-bucket-name: weeklyloginreports20xx
 
-  reports-bucket-name: weeklyloginreports20xx
+  
   user-pool-arn: arn:aws:cognito-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}
   construct-state-machine-name: construct-${self:service}-${self:provider.stage}
   construct-state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.construct-state-machine-name} 
@@ -106,7 +110,7 @@ functions:
       REGION: ${self:provider.region}
       TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
       LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name}  
-      REPORTS_BUCKET_NAME: ${self:custom.reports-bucket-name} 
+      REPORTS_BUCKET_NAME: ${self:custom.${self:provider.stage}.reports-bucket-name} 
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -127,7 +131,7 @@ functions:
       REGION: ${self:provider.region}
       NON_CONFIRMED_USERS_TABLE_NAME: ${self:custom.non-confirmed-users-table-name}
       CONFIRMED_USERS_TABLE_NAME: ${self:custom.login-report-table-name} 
-      REPORTS_BUCKET_NAME: ${self:custom.reports-bucket-name} 
+      REPORTS_BUCKET_NAME: ${self:custom.${self:provider.stage}.reports-bucket-name}
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -147,7 +151,7 @@ functions:
     environment:
       REGION: ${self:provider.region}
       LOGIN_REPORT_TABLE_NAME: ${self:custom.login-report-table-name} 
-      REPORTS_BUCKET_NAME: ${self:custom.reports-bucket-name} 
+      REPORTS_BUCKET_NAME: ${self:custom.${self:provider.stage}.reports-bucket-name}
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -166,14 +170,18 @@ functions:
     handler: src/construct/sendEmail.handler
     environment:
       REGION: ${self:provider.region}
-      REPORTS_BUCKET_NAME: ${self:custom.reports-bucket-name} 
+      REPORTS_BUCKET_NAME: ${self:custom.${self:provider.stage}.reports-bucket-name}
+      EMAIL_TO: ${self:custom.${self:provider.stage}.emailTo}
     iamRoleStatements:
       - Effect: Allow
         Action:
         - s3:*
         Resource:
         - arn:aws:s3:::weeklyloginreports20xx/reports/*   
-
+      - Effect: Allow
+        Action:
+        - ses:*
+        Resource: '*'  
 stepFunctions:
   stateMachines:
     GatherWeeklyLoginData:
