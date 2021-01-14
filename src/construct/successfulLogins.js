@@ -35,7 +35,7 @@ const style = {
   font: {
     name: 'Calibri',
     bold: false,
-    size: 11
+    size: 12
   },
   alignment: {
     vertical: 'middle',
@@ -398,10 +398,10 @@ const readUserLogins = jobId => {
 
     row = sheet.getRow(10)
     this.setCell(row.getCell(7), 'TOTAL')
-    this.setCell(row.getCell(8), `${fourWeeksAgoLogins.length} `)
-    this.setCell(row.getCell(9), `${threeWeeksAgoLogins.length} `)
-    this.setCell(row.getCell(10), `${twoWeeksAgoLogins.length} `)
-    this.setCell(row.getCell(11), `${oneWeeksAgoLogins.length} `)
+    this.setCell(row.getCell(8), fourWeeksAgoLogins.length)
+    this.setCell(row.getCell(9), threeWeeksAgoLogins.length)
+    this.setCell(row.getCell(10), twoWeeksAgoLogins.length)
+    this.setCell(row.getCell(11), oneWeeksAgoLogins.length)
 
     return Promise.resolve(parsedData)
   }).then((parsedData) => {
@@ -486,7 +486,7 @@ const readUserLogins = jobId => {
 
     for (let i = 0; i < 10; i++) {
       const row = sheet.getRow(i + 54)
-      this.setCell(row.getCell(7), `${(i + 1)}`)
+      this.setCell(row.getCell(7), i + 1)
       this.printLoginsForCities(row, parsedData, i)
     }
 
