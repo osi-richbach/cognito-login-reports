@@ -1,4 +1,4 @@
-service: cognito-logins-report
+service: cognito-login-reports
 frameworkVersion: '2'
 
 plugins:
@@ -13,20 +13,23 @@ provider:
   lambdaHashingVersion: 20201221
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-west-2'}
+  timeout: 60
   apiGateway:
     shouldStartNameWithService: true
 
 custom:
   dev:
     userPoolId: us-west-2_FCgAM8Jlo
-    emailTo: "rich.bach@osi.ca.gov"
+    emailTo: "rich.bach@osi.ca.gov, ken.hamilton@osi.ca.gov"
     reports-bucket-name: cwds.cognito.userlist
   prod:
     userPoolId: us-west-2_FCgAM8Jlo 
     emailTo: "rich.bach@osi.ca.gov, ken.hamilton@osi.ca.gov, khosrow.mamnoon@osi.ca.gov"
     reports-bucket-name: weeklyloginreports20xx
 
-  emailFrom: ken.hamilton@osi.ca.gov
+  # snsTopic: ${self:service}-${self:provider.stage}-topic
+  # snsTopicArn: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:custom.snsTopic}
+  emailFrom: "ken.hamilton@osi.ca.gov"
   user-pool-arn: arn:aws:cognito-idp:${self:provider.region}:#{AWS::AccountId}:userpool/${self:custom.${self:provider.stage}.userPoolId}
   construct-state-machine-name: construct-${self:service}-${self:provider.stage}
   construct-state-machine-arn: arn:aws:states:${self:provider.region}:#{AWS::AccountId}:stateMachine:${self:custom.construct-state-machine-name} 
@@ -173,6 +176,9 @@ functions:
 stepFunctions:
   stateMachines:
     GatherWeeklyLoginData:
+      # Hmmmm, there are dependency issues on this.  Will get back to this later.
+      # dependsOn:
+      #   - snsTopic
       events:
         - http: 
             method: GET
@@ -185,6 +191,8 @@ stepFunctions:
       notifications:
         SUCCEEDED:
           - stepFunctions: ${self:custom.construct-state-machine-arn}    
+          # Hmmmm, there are dependency issues on this.  Will get back to this later.
+          # - sns: ${self:custom.snsTopicArn}
       definition:
         StartAt: FindUsersInitiate
         States:
@@ -316,3 +324,14 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5            
+
+    # Hmmmm, there are dependency issues on this.  Will get back to this later.
+    # snsTopic:
+    #   Type: AWS::SNS::Topic
+    #   Properties:
+    #     TopicName: ${self:custom.snsTopic}
+    #     DisplayName: ${self:service}-${self:provider.stage}
+    #     Subscription:
+    #       - Endpoint: rich.bach@osi.ca.gov
+    #         Protocol: email
+        
