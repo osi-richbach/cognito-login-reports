@@ -72,7 +72,7 @@ functions:
         - dynamodb:BatchWriteItem
         Resource:
         - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.login-report-table-name}
-        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:${AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
+        - Fn::Sub: arn:aws:dynamodb:${self:provider.region}:#{AWS::AccountId}:table/${self:custom.non-confirmed-users-table-name}
       - Effect: Allow
         Action:
         - cognito-idp:AdminListUserAuthEvents

@@ -109,16 +109,17 @@ const findLogins = (user, allSuccessfulLoginsList, allFailedLoginsList, nextToke
     return csp.adminListUserAuthEvents(adminListUserAuthEventsParams).promise()
   }).then(response => {
     response.AuthEvents.forEach(authEvent => {
+      const loginDate = new Date(authEvent.CreationDate)
       if (isSuccessfulUserLogin(authEvent)) {
-        const loginDate = new Date(authEvent.CreationDate)
         // eslint-disable-next-line
         console.log(`Found login for ${email} - ${loginDate},${authEvent.EventContextData.City}`);
         allSuccessfulLoginsList.push(authEvent)
       } else if (isFailedUserLogin(authEvent)) {
-        const loginDate = new Date(authEvent.CreationDate)
         // eslint-disable-next-line
         console.log(`Found failed login for ${email} - ${loginDate},${authEvent.EventContextData.City}`);
         allFailedLoginsList.push(authEvent)
+      } else {
+        console.log(`Ignoring login for ${email} - ${loginDate},${authEvent.EventContextData.City},${authEvent.EventType},${authEvent.EventResponse}`)
       }
     })
     if (response.NextToken !== undefined) {
@@ -143,7 +144,8 @@ const findLogins = (user, allSuccessfulLoginsList, allFailedLoginsList, nextToke
 
 const isSuccessfulUserLogin = authEvent => {
   // This really is horrible. 'Unknown, Unknown' seems to be best way to figure out the "fake" login
-  if (authEvent.EventType === 'SignIn' && authEvent.EventResponse === 'Pass' && authEvent.EventContextData.DeviceName !== 'Unknown, Unknown') {
+  console.log(JSON.stringify(authEvent))
+  if (authEvent.EventType === 'SignIn' && authEvent.EventResponse === 'Pass' && (authEvent.EventContextData.IpAddress !== '34.223.204.222' && authEvent.EventContextData.DeviceName !== 'Unknown, Unknown' && authEvent.EventContextData.City !== 'Boardman')) {
     return true
   }
 
