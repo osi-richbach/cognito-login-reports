@@ -20,11 +20,11 @@ provider:
 custom:
   dev:
     userPoolId: us-west-2_FCgAM8Jlo
-    emailTo: "rich.bach@osi.ca.gov, ken.hamilton@osi.ca.gov"
+    emailTo: "ken.hamilton@osi.ca.gov"
     reports-bucket-name: cwds.cognito.userlist
   prod:
     userPoolId: us-west-2_FCgAM8Jlo 
-    emailTo: "rich.bach@osi.ca.gov, ken.hamilton@osi.ca.gov, khosrow.mamnoon@osi.ca.gov"
+    emailTo: "ken.hamilton@osi.ca.gov, khosrow.mamnoon@osi.ca.gov"
     reports-bucket-name: weeklyloginreports20xx
 
   # snsTopic: ${self:service}-${self:provider.stage}-topic
